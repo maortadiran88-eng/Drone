@@ -5,12 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>מגן שמיים · Drone Tracker</title>
 
-  <!-- Leaflet -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Exo+2:wght@300;500;700&display=swap" rel="stylesheet">
 
   <style>
-    /* ─── Design tokens ─── */
     :root {
       --bg:        #080d12;
       --panel:     #0d1520;
@@ -20,12 +20,9 @@
       --warn:      #ffd600;
       --text:      #cde3f5;
       --muted:     #4a6a88;
-      --radius:    10px;
       --font-mono: 'Share Tech Mono', 'Courier New', monospace;
       --font-ui:   'Exo 2', 'Segoe UI', sans-serif;
     }
-
-    @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Exo+2:wght@300;500;700&display=swap');
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -38,14 +35,13 @@
       -webkit-tap-highlight-color: transparent;
     }
 
-    /* ─── Layout ─── */
     #app {
       display: flex;
       flex-direction: column;
       height: 100dvh;
     }
 
-    /* ─── Header ─── */
+    /* ── Header ── */
     #header {
       flex-shrink: 0;
       background: var(--panel);
@@ -62,19 +58,8 @@
       margin-bottom: 6px;
     }
 
-    .logo {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .logo-icon {
-      width: 28px;
-      height: 28px;
-      position: relative;
-    }
-
-    /* SVG drone icon */
+    .logo { display: flex; align-items: center; gap: 8px; }
+    .logo-icon { width: 28px; height: 28px; }
     .logo-icon svg { width: 100%; height: 100%; }
 
     .logo-title {
@@ -82,7 +67,6 @@
       font-size: 1rem;
       color: var(--accent);
       letter-spacing: 0.08em;
-      line-height: 1.1;
     }
 
     .logo-sub {
@@ -92,7 +76,6 @@
       text-transform: uppercase;
     }
 
-    /* pulse dot */
     .pulse-wrap {
       display: flex;
       align-items: center;
@@ -107,6 +90,7 @@
       border-radius: 50%;
       background: var(--muted);
       flex-shrink: 0;
+      transition: background 0.3s;
     }
 
     .pulse-dot.live {
@@ -115,17 +99,15 @@
       animation: pulse 1.6s infinite;
     }
 
+    .pulse-dot.error { background: var(--danger); }
+
     @keyframes pulse {
       0%   { box-shadow: 0 0 0 0   rgba(0,230,118,0.6); }
       70%  { box-shadow: 0 0 0 8px rgba(0,230,118,0); }
       100% { box-shadow: 0 0 0 0   rgba(0,230,118,0); }
     }
 
-    /* ─── Stats bar ─── */
-    .stats-bar {
-      display: flex;
-      gap: 8px;
-    }
+    .stats-bar { display: flex; gap: 8px; }
 
     .stat-card {
       flex: 1;
@@ -134,6 +116,7 @@
       border-radius: 6px;
       padding: 5px 8px;
       text-align: center;
+      transition: border-color 0.6s;
     }
 
     .stat-value {
@@ -153,22 +136,17 @@
       margin-top: 2px;
     }
 
-    /* ─── Map ─── */
-    #map {
-      flex: 1;
-      min-height: 0;
-      width: 100%;
-    }
+    /* ── Map ── */
+    #map { flex: 1; min-height: 0; width: 100%; }
 
-    /* Dark Leaflet tiles override */
     .leaflet-tile { filter: brightness(0.75) saturate(0.6) hue-rotate(195deg); }
     .leaflet-container { background: #05090f; }
 
-    /* ─── Popup ─── */
+    /* ── Popup ── */
     .leaflet-popup-content-wrapper {
       background: var(--panel) !important;
       border: 1px solid var(--border) !important;
-      border-radius: var(--radius) !important;
+      border-radius: 10px !important;
       color: var(--text) !important;
       font-family: var(--font-mono) !important;
       font-size: 0.78rem !important;
@@ -179,57 +157,51 @@
     .leaflet-popup-tip { background: var(--border) !important; }
     .leaflet-popup-close-button { color: var(--muted) !important; font-size: 16px !important; padding: 6px 8px !important; }
 
-    .popup-inner {
-      padding: 10px 12px;
-    }
-
-    .popup-id {
-      color: var(--accent);
-      font-size: 0.85rem;
-      font-weight: bold;
-      margin-bottom: 6px;
-    }
+    .popup-inner { padding: 10px 12px; }
+    .popup-id { color: var(--accent); font-size: 0.85rem; font-weight: bold; margin-bottom: 6px; }
 
     .popup-row {
       display: flex;
       justify-content: space-between;
       gap: 16px;
-      padding: 2px 0;
+      padding: 3px 0;
       border-bottom: 1px solid var(--border);
     }
 
     .popup-row:last-child { border-bottom: none; }
-
     .popup-key { color: var(--muted); }
     .popup-val { color: var(--text); text-align: left; }
 
-    /* ─── Bottom toast ─── */
+    /* ── Toast ── */
     #toast {
       position: fixed;
       bottom: 20px;
       left: 50%;
       transform: translateX(-50%);
-      background: rgba(13,21,32,0.96);
+      background: rgba(13,21,32,0.97);
       border: 1px solid var(--border);
       border-radius: 20px;
       padding: 8px 18px;
       font-size: 0.72rem;
-      color: var(--muted);
+      color: var(--text);
       font-family: var(--font-mono);
       z-index: 2000;
       pointer-events: none;
       opacity: 0;
       transition: opacity 0.4s;
       white-space: nowrap;
+      max-width: 90vw;
+      text-align: center;
     }
 
     #toast.show { opacity: 1; }
+    #toast.err  { border-color: var(--danger); color: var(--danger); }
 
-    /* ─── Status overlay (GPS waiting) ─── */
+    /* ── Overlay ── */
     #overlay {
       position: fixed;
       inset: 0;
-      background: rgba(8,13,18,0.96);
+      background: rgba(8,13,18,0.97);
       z-index: 3000;
       display: flex;
       flex-direction: column;
@@ -249,38 +221,14 @@
 
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    .overlay-text {
-      color: var(--text);
-      font-size: 0.95rem;
-      text-align: center;
-      line-height: 1.7;
-    }
+    .overlay-text { color: var(--text); font-size: 0.95rem; text-align: center; line-height: 1.8; }
+    .overlay-sub  { color: var(--muted); font-size: 0.7rem; }
 
-    .overlay-sub {
-      color: var(--muted);
-      font-size: 0.7rem;
-    }
-
-    /* ─── Refresh flash ─── */
     @keyframes flashBorder {
       0%   { border-color: var(--accent); }
       100% { border-color: var(--border); }
     }
-
-    .stat-card.flash {
-      animation: flashBorder 0.6s ease-out;
-    }
-
-    /* ─── Radar sweep overlay on map (decorative) ─── */
-    #radar-ring {
-      position: absolute;
-      pointer-events: none;
-      border-radius: 50%;
-      border: 1px solid rgba(0,212,255,0.15);
-      z-index: 500;
-      transform: translate(-50%, -50%);
-      display: none;
-    }
+    .flash { animation: flashBorder 0.7s ease-out; }
   </style>
 </head>
 <body>
@@ -289,19 +237,18 @@
   <div class="overlay-spinner"></div>
   <div class="overlay-text">
     מגן שמיים<br>
-    <span class="overlay-sub">ממתין לאישור GPS…</span>
+    <span class="overlay-sub" id="overlayMsg">ממתין לאישור GPS…</span>
   </div>
 </div>
 
 <div id="app">
-  <!-- Header -->
   <div id="header">
     <div class="header-top">
       <div class="logo">
         <div class="logo-icon">
           <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
             <circle cx="16" cy="16" r="4" fill="#00d4ff"/>
-            <rect x="13" y="4" width="6" height="6" rx="2" fill="#00d4ff" opacity=".7"/>
+            <rect x="13" y="4"  width="6" height="6" rx="2" fill="#00d4ff" opacity=".7"/>
             <rect x="13" y="22" width="6" height="6" rx="2" fill="#00d4ff" opacity=".7"/>
             <rect x="4"  y="13" width="6" height="6" rx="2" fill="#00d4ff" opacity=".7"/>
             <rect x="22" y="13" width="6" height="6" rx="2" fill="#00d4ff" opacity=".7"/>
@@ -316,7 +263,6 @@
           <div class="logo-sub">Drone Radar · 30km</div>
         </div>
       </div>
-
       <div class="pulse-wrap">
         <div class="pulse-dot" id="liveDot"></div>
         <span id="lastUpdate">--:--:--</span>
@@ -325,283 +271,230 @@
 
     <div class="stats-bar">
       <div class="stat-card" id="card-total">
-        <div class="stat-value" id="val-total">0</div>
+        <div class="stat-value" id="val-total">—</div>
         <div class="stat-label">כלי טיס נמוכים</div>
       </div>
       <div class="stat-card" id="card-low">
-        <div class="stat-value danger" id="val-low">0</div>
+        <div class="stat-value danger" id="val-low">—</div>
         <div class="stat-label">מתחת ל-150 מ'</div>
       </div>
       <div class="stat-card" id="card-radius">
-        <div class="stat-value warn" id="val-radius">--</div>
+        <div class="stat-value warn" id="val-radius">30</div>
         <div class="stat-label">רדיוס ק"מ</div>
       </div>
     </div>
   </div>
 
-  <!-- Map -->
   <div id="map"></div>
 </div>
 
 <div id="toast"></div>
 
 <script>
-// ─── Config ───────────────────────────────────────────────────────────────
-const REFRESH_INTERVAL_MS  = 10_000;   // 10 seconds
-const RADIUS_KM            = 30;
-const MAX_ALT_M            = 500;      // filter threshold (metres above ground)
-const OPENSKY_BASE         = 'https://opensky-network.org/api/states/all';
+/* ── Config ── */
+const REFRESH_MS  = 10_000;
+const RADIUS_KM   = 30;
+const RADIUS_NM   = Math.ceil(RADIUS_KM / 1.852);   // ~17 NM
+const MAX_ALT_FT  = 1640;   // 500 m in feet
+const LOW_ALT_FT  = 492;    // 150 m in feet
 
-// ─── State ────────────────────────────────────────────────────────────────
+/* adsb.fi — CORS-enabled, free, no key required */
+const API_URL = (lat, lon) =>
+  `https://api.adsb.fi/v1/aircraft?lat=${lat}&lon=${lon}&dist=${RADIUS_NM}`;
+
+/* ── State ── */
 let map, userMarker, userLatLng;
-let aircraftMarkers = {};   // icao24 → Leaflet marker
-let refreshTimer = null;
+let markers   = {};   // hex → L.marker
+let fetchTimer = null;
+let consecutiveErrors = 0;
 
-// ─── UI helpers ───────────────────────────────────────────────────────────
-const $ = id => document.getElementById(id);
+/* ── DOM helpers ── */
+const $  = id => document.getElementById(id);
+const ft2m = ft => Math.round(ft * 0.3048);
+const kn2kmh = kn => Math.round(kn * 1.852);
 
-function toast(msg, duration = 2600) {
+function toast(msg, isErr = false, ms = 3000) {
   const el = $('toast');
   el.textContent = msg;
+  el.classList.toggle('err', isErr);
   el.classList.add('show');
   clearTimeout(el._t);
-  el._t = setTimeout(() => el.classList.remove('show'), duration);
+  el._t = setTimeout(() => el.classList.remove('show'), ms);
 }
 
-function flash(cardId) {
-  const el = $(cardId);
+function flash(id) {
+  const el = $(id);
   el.classList.remove('flash');
   void el.offsetWidth;
   el.classList.add('flash');
 }
 
-function updateClock() {
-  const now = new Date();
-  $('lastUpdate').textContent =
-    now.toLocaleTimeString('he-IL', { hour12: false });
-  $('liveDot').classList.add('live');
+/* ── Haversine ── */
+function dist_km(lat1, lon1, lat2, lon2) {
+  const R  = 6371, d2r = Math.PI / 180;
+  const dL = (lat2 - lat1) * d2r, dO = (lon2 - lon1) * d2r;
+  const a  = Math.sin(dL/2)**2
+            + Math.cos(lat1*d2r)*Math.cos(lat2*d2r)*Math.sin(dO/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 
-// ─── Drone SVG icon ───────────────────────────────────────────────────────
-function makeDroneIcon(alt) {
-  const color  = alt < 150 ? '#ff3c3c' : '#ff8c00';
-  const shadow = alt < 150 ? 'rgba(255,60,60,0.5)' : 'rgba(255,140,0,0.5)';
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
-    <circle cx="16" cy="16" r="5" fill="${color}" opacity="0.2"/>
-    <circle cx="16" cy="16" r="3" fill="${color}"/>
-    <rect x="13.5" y="5"  width="5" height="5" rx="2" fill="${color}"/>
-    <rect x="13.5" y="22" width="5" height="5" rx="2" fill="${color}"/>
-    <rect x="5"  y="13.5" width="5" height="5" rx="2" fill="${color}"/>
-    <rect x="22" y="13.5" width="5" height="5" rx="2" fill="${color}"/>
-    <line x1="13.5" y1="13.5" x2="9"  y2="9"  stroke="${color}" stroke-width="1.5" opacity=".6"/>
-    <line x1="18.5" y1="13.5" x2="23" y2="9"  stroke="${color}" stroke-width="1.5" opacity=".6"/>
-    <line x1="13.5" y1="18.5" x2="9"  y2="23" stroke="${color}" stroke-width="1.5" opacity=".6"/>
-    <line x1="18.5" y1="18.5" x2="23" y2="23" stroke="${color}" stroke-width="1.5" opacity=".6"/>
+/* ── Icons ── */
+function droneIcon(altFt) {
+  const col = altFt < LOW_ALT_FT ? '#ff3c3c' : '#ff8c00';
+  const glow= altFt < LOW_ALT_FT ? 'rgba(255,60,60,0.55)' : 'rgba(255,140,0,0.45)';
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="34" height="34" viewBox="0 0 32 32">
+    <circle cx="16" cy="16" r="5" fill="${col}" opacity="0.18"/>
+    <circle cx="16" cy="16" r="3" fill="${col}"/>
+    <rect x="13.5" y="5"  width="5" height="5" rx="2" fill="${col}"/>
+    <rect x="13.5" y="22" width="5" height="5" rx="2" fill="${col}"/>
+    <rect x="5"  y="13.5" width="5" height="5" rx="2" fill="${col}"/>
+    <rect x="22" y="13.5" width="5" height="5" rx="2" fill="${col}"/>
+    <line x1="13.5" y1="13.5" x2="9"  y2="9"  stroke="${col}" stroke-width="1.5" opacity=".6"/>
+    <line x1="18.5" y1="13.5" x2="23" y2="9"  stroke="${col}" stroke-width="1.5" opacity=".6"/>
+    <line x1="13.5" y1="18.5" x2="9"  y2="23" stroke="${col}" stroke-width="1.5" opacity=".6"/>
+    <line x1="18.5" y1="18.5" x2="23" y2="23" stroke="${col}" stroke-width="1.5" opacity=".6"/>
   </svg>`;
   return L.divIcon({
-    html: `<div style="filter:drop-shadow(0 0 4px ${shadow})">${svg}</div>`,
-    iconSize:   [32, 32],
-    iconAnchor: [16, 16],
-    popupAnchor:[0, -16],
-    className:  ''
+    html: `<div style="filter:drop-shadow(0 0 5px ${glow})">${svg}</div>`,
+    iconSize: [34,34], iconAnchor: [17,17], popupAnchor: [0,-17], className: ''
   });
 }
 
-// ─── User location icon ───────────────────────────────────────────────────
-function makeUserIcon() {
+function userIcon() {
   return L.divIcon({
-    html: `<div style="
-      width:16px;height:16px;
-      border-radius:50%;
-      background:rgba(0,120,255,0.85);
-      border:3px solid #fff;
-      box-shadow:0 0 0 4px rgba(0,120,255,0.3);
-    "></div>`,
-    iconSize:   [16, 16],
-    iconAnchor: [8, 8],
-    className:  ''
+    html: `<div style="width:16px;height:16px;border-radius:50%;
+      background:rgba(0,120,255,0.9);border:3px solid #fff;
+      box-shadow:0 0 0 5px rgba(0,120,255,0.3)"></div>`,
+    iconSize: [16,16], iconAnchor: [8,8], className: ''
   });
 }
 
-// ─── Bounding box for API ─────────────────────────────────────────────────
-function bbox(lat, lon, km) {
-  const deg = km / 111.32;
-  const degLon = km / (111.32 * Math.cos(lat * Math.PI / 180));
-  return {
-    laMin: lat  - deg,
-    laMax: lat  + deg,
-    loMin: lon  - degLon,
-    loMax: lon  + degLon
-  };
+/* ── Popup HTML ── */
+function popupHtml(ac, distKm) {
+  const callsign = (ac.flight || ac.hex || '').trim() || ac.hex;
+  const altFt    = typeof ac.alt_baro === 'number' ? ac.alt_baro : 0;
+  const altM     = ft2m(altFt);
+  const speedKmh = ac.gs != null ? kn2kmh(ac.gs) : '?';
+  const squawk   = ac.squawk || '—';
+  return `<div class="popup-inner">
+    <div class="popup-id">✈ ${callsign}</div>
+    <div class="popup-row"><span class="popup-key">ICAO24</span><span class="popup-val">${ac.hex}</span></div>
+    <div class="popup-row"><span class="popup-key">גובה</span><span class="popup-val">${altM} מ' (${altFt} ft)</span></div>
+    <div class="popup-row"><span class="popup-key">מהירות</span><span class="popup-val">${speedKmh} קמ"ש</span></div>
+    <div class="popup-row"><span class="popup-key">מרחק</span><span class="popup-val">${distKm.toFixed(1)} ק"מ</span></div>
+    <div class="popup-row"><span class="popup-key">Squawk</span><span class="popup-val">${squawk}</span></div>
+  </div>`;
 }
 
-// ─── Haversine distance (km) ──────────────────────────────────────────────
-function haversine(lat1, lon1, lat2, lon2) {
-  const R  = 6371;
-  const dL = (lat2 - lat1) * Math.PI / 180;
-  const dO = (lon2 - lon1) * Math.PI / 180;
-  const a  = Math.sin(dL/2)**2
-           + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180)
-           * Math.sin(dO/2)**2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-
-// ─── Fetch aircraft ───────────────────────────────────────────────────────
+/* ── Fetch ── */
 async function fetchAircraft() {
   if (!userLatLng) return;
-
   const { lat, lng } = userLatLng;
-  const { laMin, laMax, loMin, loMax } = bbox(lat, lng, RADIUS_KM);
 
-  const url =
-    `${OPENSKY_BASE}?lamin=${laMin.toFixed(4)}&lomin=${loMin.toFixed(4)}` +
-    `&lamax=${laMax.toFixed(4)}&lomax=${loMax.toFixed(4)}`;
-
-  let states = [];
+  let aircraft = [];
   try {
-    const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
+    const res = await fetch(API_URL(lat, lng), {
+      signal: AbortSignal.timeout(8000),
+      headers: { 'Accept': 'application/json' }
+    });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
-    states = data.states || [];
+    aircraft = data.ac || [];
+    consecutiveErrors = 0;
+    $('liveDot').className = 'pulse-dot live';
   } catch (err) {
+    consecutiveErrors++;
+    $('liveDot').className = 'pulse-dot error';
     console.warn('Fetch error:', err.message);
-    toast('⚠ שגיאה בטעינת נתונים – ניסיון חוזר בעוד 10 שניות');
+    toast(`⚠ שגיאת רשת (${err.message.slice(0,40)})`, true, 4000);
     return;
   }
-
-  // OpenSky state vector indices:
-  // [0] icao24  [1] callsign  [5] lon  [6] lat
-  // [7] baro_alt (m)  [9] velocity (m/s)  [13] geo_alt (m)
 
   const liveSet = new Set();
   let countLow  = 0;
 
-  states.forEach(s => {
-    const icao    = s[0];
-    const callsign= (s[1] || '').trim() || icao;
-    const lon     = s[5];
-    const latAc   = s[6];
-    const baroAlt = s[7];       // metres (null = on ground)
-    const speed   = s[9];       // m/s
-    const geoAlt  = s[13];      // metres
+  aircraft.forEach(ac => {
+    const hex  = ac.hex;
+    const lat2 = ac.lat;
+    const lon2 = ac.lon;
+    if (!hex || lat2 == null || lon2 == null) return;
 
-    // Must have position
-    if (lon == null || latAc == null) return;
+    /* altitude — adsb.fi gives feet; "ground" string means 0 */
+    const altFt = typeof ac.alt_baro === 'number' ? ac.alt_baro :
+                  (ac.alt_baro === 'ground' ? 0 :
+                  (typeof ac.alt_geom === 'number' ? ac.alt_geom : 9999));
 
-    // Use geo_alt if baro_alt missing
-    const alt = baroAlt ?? geoAlt ?? 0;
+    /* filter: only below 500 m */
+    if (altFt > MAX_ALT_FT) return;
 
-    // Altitude filter: below 500 m (or on ground alt=0/null)
-    if (alt > MAX_ALT_M) return;
+    /* strict circle filter */
+    const d = dist_km(lat, lng, lat2, lon2);
+    if (d > RADIUS_KM) return;
 
-    // Distance filter (strict circle not bbox)
-    const dist = haversine(lat, lng, latAc, lon);
-    if (dist > RADIUS_KM) return;
+    liveSet.add(hex);
+    if (altFt <= LOW_ALT_FT) countLow++;
 
-    liveSet.add(icao);
-    if (alt < 150) countLow++;
+    const html = popupHtml(ac, d);
 
-    const speedKmh = speed != null ? Math.round(speed * 3.6) : '?';
-    const altM     = Math.round(alt);
-    const distKm   = dist.toFixed(1);
-
-    const popupHtml = `
-      <div class="popup-inner">
-        <div class="popup-id">✈ ${callsign}</div>
-        <div class="popup-row">
-          <span class="popup-key">ICAO24</span>
-          <span class="popup-val">${icao}</span>
-        </div>
-        <div class="popup-row">
-          <span class="popup-key">גובה</span>
-          <span class="popup-val">${altM} מ'</span>
-        </div>
-        <div class="popup-row">
-          <span class="popup-key">מהירות</span>
-          <span class="popup-val">${speedKmh} קמ"ש</span>
-        </div>
-        <div class="popup-row">
-          <span class="popup-key">מרחק</span>
-          <span class="popup-val">${distKm} ק"מ</span>
-        </div>
-      </div>`;
-
-    if (aircraftMarkers[icao]) {
-      aircraftMarkers[icao].setLatLng([latAc, lon]);
-      aircraftMarkers[icao].setIcon(makeDroneIcon(alt));
-      aircraftMarkers[icao].getPopup().setContent(popupHtml);
+    if (markers[hex]) {
+      markers[hex].setLatLng([lat2, lon2]);
+      markers[hex].setIcon(droneIcon(altFt));
+      markers[hex].getPopup().setContent(html);
     } else {
-      const marker = L.marker([latAc, lon], { icon: makeDroneIcon(alt) })
-        .bindPopup(popupHtml, { maxWidth: 230, minWidth: 180 })
+      markers[hex] = L.marker([lat2, lon2], { icon: droneIcon(altFt) })
+        .bindPopup(html, { maxWidth: 240, minWidth: 190 })
         .addTo(map);
-      aircraftMarkers[icao] = marker;
     }
   });
 
-  // Remove stale markers
-  Object.keys(aircraftMarkers).forEach(icao => {
-    if (!liveSet.has(icao)) {
-      map.removeLayer(aircraftMarkers[icao]);
-      delete aircraftMarkers[icao];
+  /* remove stale */
+  Object.keys(markers).forEach(hex => {
+    if (!liveSet.has(hex)) {
+      map.removeLayer(markers[hex]);
+      delete markers[hex];
     }
   });
 
-  // Update stats
-  const total = liveSet.size;
-  $('val-total').textContent  = total;
-  $('val-low').textContent    = countLow;
-  $('val-radius').textContent = RADIUS_KM;
+  /* stats */
+  $('val-total').textContent = liveSet.size;
+  $('val-low').textContent   = countLow;
+  $('val-radius').textContent= RADIUS_KM;
+  $('lastUpdate').textContent= new Date().toLocaleTimeString('he-IL', { hour12: false });
 
   flash('card-total');
-  updateClock();
-
-  if (total === 0) {
-    toast('אין כלי טיס נמוכים בטווח כרגע');
-  }
 }
 
-// ─── Init map ─────────────────────────────────────────────────────────────
+/* ── Map init ── */
 function initMap(lat, lng) {
   map = L.map('map', {
-    center:          [lat, lng],
-    zoom:            11,
-    zoomControl:     true,
-    attributionControl: false
+    center: [lat, lng], zoom: 11,
+    zoomControl: true, attributionControl: false
   });
 
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 18,
-    attribution: '© OpenStreetMap'
-  }).addTo(map);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18 }).addTo(map);
 
-  // Radius circle
+  /* radius ring */
   L.circle([lat, lng], {
-    radius:      RADIUS_KM * 1000,
-    color:       '#00d4ff',
-    weight:      1,
-    opacity:     0.3,
-    fillColor:   '#00d4ff',
-    fillOpacity: 0.04
+    radius: RADIUS_KM * 1000,
+    color: '#00d4ff', weight: 1, opacity: 0.3,
+    fillColor: '#00d4ff', fillOpacity: 0.04
   }).addTo(map);
 
-  // User marker
-  userMarker = L.marker([lat, lng], { icon: makeUserIcon(), zIndexOffset: 1000 })
+  userMarker = L.marker([lat, lng], { icon: userIcon(), zIndexOffset: 1000 })
     .addTo(map)
     .bindPopup('<div class="popup-inner"><div class="popup-id">📍 מיקומך</div></div>');
 
   userLatLng = { lat, lng };
   $('overlay').style.display = 'none';
 
-  // Start fetching
   fetchAircraft();
-  refreshTimer = setInterval(fetchAircraft, REFRESH_INTERVAL_MS);
+  fetchTimer = setInterval(fetchAircraft, REFRESH_MS);
 }
 
-// ─── GPS ──────────────────────────────────────────────────────────────────
+/* ── GPS ── */
 function startGPS() {
   if (!navigator.geolocation) {
-    $('overlay').querySelector('.overlay-sub').textContent =
-      'הדפדפן אינו תומך ב-GPS';
+    $('overlayMsg').textContent = 'הדפדפן אינו תומך ב-GPS';
     return;
   }
 
@@ -609,7 +502,6 @@ function startGPS() {
     pos => {
       const lat = pos.coords.latitude;
       const lng = pos.coords.longitude;
-
       if (!map) {
         initMap(lat, lng);
       } else {
@@ -618,15 +510,17 @@ function startGPS() {
       }
     },
     err => {
-      console.warn('GPS error:', err.message);
-      $('overlay').querySelector('.overlay-sub').textContent =
-        'לא ניתן לגשת ל-GPS. אנא אשר גישה למיקום.';
+      const msgs = {
+        1: 'לא אושרה גישה למיקום — אנא אפשר GPS בהגדרות',
+        2: 'המיקום אינו זמין כרגע',
+        3: 'תם זמן קבלת המיקום'
+      };
+      $('overlayMsg').textContent = msgs[err.code] || 'שגיאת GPS';
     },
     { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
   );
 }
 
-// ─── Boot ─────────────────────────────────────────────────────────────────
 startGPS();
 </script>
 </body>
