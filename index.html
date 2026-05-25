@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>מגן שמיים · Drone Tracker</title>
+
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+
+  <style>
+    /* ─── Design tokens ─── */
+    :root {
+      --bg:        #080d12;
+      --panel:     #0d1520;
+      --border:    #1a2d42;
+      --accent:    #00d4ff;
+      --danger:    #ff3c3c;
+      --warn:      #ffd600;
+      --text:      #cde3f5;
+      --muted:     #4a6a88;
+      --radius:    10px;
+      --font-mono: 'Share Tech Mono', 'Courier New', monospace;
+      --font-ui:   'Exo 2', 'Segoe UI', sans-serif;
+    }
+
+    @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Exo+2:wght@300;500;700&display=swap');
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-ui);
+      overflow: hidden;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* ─── Layout ─── */
+    #app {
+      display: flex;
+      flex-direction: column;
+      height: 100dvh;
+    }
+
+    /* ─── Header ─── */
+    #header {
+      flex-shrink: 0;
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 14px 8px;
+      position: relative;
+      z-index: 1000;
+    }
+
+    .header-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .logo-icon {
+      width: 28px;
+      height: 28px;
+      position: relative;
+    }
+
+    /* SVG drone icon */
+    .logo-icon svg { width: 100%; height: 100%; }
+
+    .logo-title {
+      font-family: var(--font-mono);
+      font-size: 1rem;
+      color: var(--accent);
+      letter-spacing: 0.08em;
+      line-height: 1.1;
+    }
+
+    .logo-sub {
+      font-size: 0.58rem;
+      color: var(--muted);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
+
+    /* pulse dot */
+    .pulse-wrap {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      color: var(--muted);
+    }
+
+    .pulse-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--muted);
+      flex-shrink: 0;
+    }
+
+    .pulse-dot.live {
+      background: #00e676;
+      box-shadow: 0 0 0 0 rgba(0,230,118,0.6);
+      animation: pulse 1.6s infinite;
+    }
+
+    @keyframes pulse {
+      0%   { box-shadow: 0 0 0 0   rgba(0,230,118,0.6); }
+      70%  { box-shadow: 0 0 0 8px rgba(0,230,118,0); }
+      100% { box-shadow: 0 0 0 0   rgba(0,230,118,0); }
+    }
+
+    /* ─── Stats bar ─── */
+    .stats-bar {
+      display: flex;
+      gap: 8px;
+    }
+
+    .stat-card {
+      flex: 1;
+      background: rgba(0,212,255,0.06);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 5px 8px;
+      text-align: center;
+    }
+
+    .stat-value {
+      font-family: var(--font-mono);
+      font-size: 1.25rem;
+      line-height: 1;
+      color: var(--accent);
+    }
+
+    .stat-value.danger { color: var(--danger); }
+    .stat-value.warn   { color: var(--warn); }
+
+    .stat-label {
+      font-size: 0.58rem;
+      color: var(--muted);
+      letter-spacing: 0.06em;
+      margin-top: 2px;
+    }
+
+    /* ─── Map ─── */
+    #map {
+      flex: 1;
+      min-height: 0;
+      width: 100%;
+    }
+
+    /* Dark Leaflet tiles override */
+    .leaflet-tile { filter: brightness(0.75) saturate(0.6) hue-rotate(195deg); }
+    .leaflet-container { background: #05090f; }
+
+    /* ─── Popup ─── */
+    .leaflet-popup-content-wrapper {
+      background: var(--panel) !important;
+      border: 1px solid var(--border) !important;
+      border-radius: var(--radius) !important;
+      color: var(--text) !important;
+      font-family: var(--font-mono) !important;
+      font-size: 0.78rem !important;
+      padding: 0 !important;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.6) !important;
+    }
+
+    .leaflet-popup-tip { background: var(--border) !important; }
+    .leaflet-popup-close-button { color: var(--muted) !important; font-size: 16px !important; padding: 6px 8px !important; }
+
+    .popup-inner {
+      padding: 10px 12px;
+    }
+
+    .popup-id {
+      color: var(--accent);
+      font-size: 0.85rem;
+      font-weight: bold;
+      margin-bottom: 6px;
+    }
+
+    .popup-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 2px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .popup-row:last-child { border-bottom: none; }
+
+    .popup-key { color: var(--muted); }
+    .popup-val { color: var(--text); text-align: left; }
+
+    /* ─── Bottom toast ─── */
+    #toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(13,21,32,0.96);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 8px 18px;
+      font-size: 0.72rem;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      z-index: 2000;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.4s;
+      white-space: nowrap;
+    }
+
+    #toast.show { opacity: 1; }
+
+    /* ─── Status overlay (GPS waiting) ─── */
+    #overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(8,13,18,0.96);
+      z-index: 3000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 18px;
+      font-family: var(--font-mono);
+    }
+
+    .overlay-spinner {
+      width: 56px; height: 56px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .overlay-text {
+      color: var(--text);
+      font-size: 0.95rem;
+      text-align: center;
+      line-height: 1.7;
+    }
+
+    .overlay-sub {
+      color: var(--muted);
+      font-size: 0.7rem;
+    }
+
+    /* ─── Refresh flash ─── */
+    @keyframes flashBorder {
+      0%   { border-color: var(--accent); }
+      100% { border-color: var(--border); }
+    }
+
+    .stat-card.flash {
+      animation: flashBorder 0.6s ease-out;
+    }
+
+    /* ─── Radar sweep overlay on map (decorative) ─── */
+    #radar-ring {
+      position: absolute;
+      pointer-events: none;
+      border-radius: 50%;
+      border: 1px solid rgba(0,212,255,0.15);
+      z-index: 500;
+      transform: translate(-50%, -50%);
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+<div id="overlay">
+  <div class="overlay-spinner"></div>
+  <div class="overlay-text">
+    מגן שמיים<br>
+    <span class="overlay-sub">ממתין לאישור GPS…</span>
+  </div>
+</div>
+
+<div id="app">
+  <!-- Header -->
+  <div id="header">
+    <div class="header-top">
+      <div class="logo">
+        <div class="logo-icon">
+          <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="16" cy="16" r="4" fill="#00d4ff"/>
+            <rect x="13" y="4" width="6" height="6" rx="2" fill="#00d4ff" opacity=".7"/>
+            <rect x="13" y="22" width="6" height="6" rx="2" fill="#00d4ff" opacity=".7"/>
+            <rect x="4"  y="13" width="6" height="6" rx="2" fill="#00d4ff" opacity=".7"/>
+            <rect x="22" y="13" width="6" height="6" rx="2" fill="#00d4ff" opacity=".7"/>
+            <line x1="13" y1="13" x2="8"  y2="8"  stroke="#00d4ff" stroke-width="1.5" opacity=".4"/>
+            <line x1="19" y1="13" x2="24" y2="8"  stroke="#00d4ff" stroke-width="1.5" opacity=".4"/>
+            <line x1="13" y1="19" x2="8"  y2="24" stroke="#00d4ff" stroke-width="1.5" opacity=".4"/>
+            <line x1="19" y1="19" x2="24" y2="24" stroke="#00d4ff" stroke-width="1.5" opacity=".4"/>
+          </svg>
+        </div>
+        <div>
+          <div class="logo-title">מגן שמיים</div>
+          <div class="logo-sub">Drone Radar · 30km</div>
+        </div>
+      </div>
+
+      <div class="pulse-wrap">
+        <div class="pulse-dot" id="liveDot"></div>
+        <span id="lastUpdate">--:--:--</span>
+      </div>
+    </div>
+
+    <div class="stats-bar">
+      <div class="stat-card" id="card-total">
+        <div class="stat-value" id="val-total">0</div>
+        <div class="stat-label">כלי טיס נמוכים</div>
+      </div>
+      <div class="stat-card" id="card-low">
+        <div class="stat-value danger" id="val-low">0</div>
+        <div class="stat-label">מתחת ל-150 מ'</div>
+      </div>
+      <div class="stat-card" id="card-radius">
+        <div class="stat-value warn" id="val-radius">--</div>
+        <div class="stat-label">רדיוס ק"מ</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Map -->
+  <div id="map"></div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ─── Config ───────────────────────────────────────────────────────────────
+const REFRESH_INTERVAL_MS  = 10_000;   // 10 seconds
+const RADIUS_KM            = 30;
+const MAX_ALT_M            = 500;      // filter threshold (metres above ground)
+const OPENSKY_BASE         = 'https://opensky-network.org/api/states/all';
+
+// ─── State ────────────────────────────────────────────────────────────────
+let map, userMarker, userLatLng;
+let aircraftMarkers = {};   // icao24 → Leaflet marker
+let refreshTimer = null;
+
+// ─── UI helpers ───────────────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+
+function toast(msg, duration = 2600) {
+  const el = $('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('show'), duration);
+}
+
+function flash(cardId) {
+  const el = $(cardId);
+  el.classList.remove('flash');
+  void el.offsetWidth;
+  el.classList.add('flash');
+}
+
+function updateClock() {
+  const now = new Date();
+  $('lastUpdate').textContent =
+    now.toLocaleTimeString('he-IL', { hour12: false });
+  $('liveDot').classList.add('live');
+}
+
+// ─── Drone SVG icon ───────────────────────────────────────────────────────
+function makeDroneIcon(alt) {
+  const color  = alt < 150 ? '#ff3c3c' : '#ff8c00';
+  const shadow = alt < 150 ? 'rgba(255,60,60,0.5)' : 'rgba(255,140,0,0.5)';
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+    <circle cx="16" cy="16" r="5" fill="${color}" opacity="0.2"/>
+    <circle cx="16" cy="16" r="3" fill="${color}"/>
+    <rect x="13.5" y="5"  width="5" height="5" rx="2" fill="${color}"/>
+    <rect x="13.5" y="22" width="5" height="5" rx="2" fill="${color}"/>
+    <rect x="5"  y="13.5" width="5" height="5" rx="2" fill="${color}"/>
+    <rect x="22" y="13.5" width="5" height="5" rx="2" fill="${color}"/>
+    <line x1="13.5" y1="13.5" x2="9"  y2="9"  stroke="${color}" stroke-width="1.5" opacity=".6"/>
+    <line x1="18.5" y1="13.5" x2="23" y2="9"  stroke="${color}" stroke-width="1.5" opacity=".6"/>
+    <line x1="13.5" y1="18.5" x2="9"  y2="23" stroke="${color}" stroke-width="1.5" opacity=".6"/>
+    <line x1="18.5" y1="18.5" x2="23" y2="23" stroke="${color}" stroke-width="1.5" opacity=".6"/>
+  </svg>`;
+  return L.divIcon({
+    html: `<div style="filter:drop-shadow(0 0 4px ${shadow})">${svg}</div>`,
+    iconSize:   [32, 32],
+    iconAnchor: [16, 16],
+    popupAnchor:[0, -16],
+    className:  ''
+  });
+}
+
+// ─── User location icon ───────────────────────────────────────────────────
+function makeUserIcon() {
+  return L.divIcon({
+    html: `<div style="
+      width:16px;height:16px;
+      border-radius:50%;
+      background:rgba(0,120,255,0.85);
+      border:3px solid #fff;
+      box-shadow:0 0 0 4px rgba(0,120,255,0.3);
+    "></div>`,
+    iconSize:   [16, 16],
+    iconAnchor: [8, 8],
+    className:  ''
+  });
+}
+
+// ─── Bounding box for API ─────────────────────────────────────────────────
+function bbox(lat, lon, km) {
+  const deg = km / 111.32;
+  const degLon = km / (111.32 * Math.cos(lat * Math.PI / 180));
+  return {
+    laMin: lat  - deg,
+    laMax: lat  + deg,
+    loMin: lon  - degLon,
+    loMax: lon  + degLon
+  };
+}
+
+// ─── Haversine distance (km) ──────────────────────────────────────────────
+function haversine(lat1, lon1, lat2, lon2) {
+  const R  = 6371;
+  const dL = (lat2 - lat1) * Math.PI / 180;
+  const dO = (lon2 - lon1) * Math.PI / 180;
+  const a  = Math.sin(dL/2)**2
+           + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180)
+           * Math.sin(dO/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+// ─── Fetch aircraft ───────────────────────────────────────────────────────
+async function fetchAircraft() {
+  if (!userLatLng) return;
+
+  const { lat, lng } = userLatLng;
+  const { laMin, laMax, loMin, loMax } = bbox(lat, lng, RADIUS_KM);
+
+  const url =
+    `${OPENSKY_BASE}?lamin=${laMin.toFixed(4)}&lomin=${loMin.toFixed(4)}` +
+    `&lamax=${laMax.toFixed(4)}&lomax=${loMax.toFixed(4)}`;
+
+  let states = [];
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    states = data.states || [];
+  } catch (err) {
+    console.warn('Fetch error:', err.message);
+    toast('⚠ שגיאה בטעינת נתונים – ניסיון חוזר בעוד 10 שניות');
+    return;
+  }
+
+  // OpenSky state vector indices:
+  // [0] icao24  [1] callsign  [5] lon  [6] lat
+  // [7] baro_alt (m)  [9] velocity (m/s)  [13] geo_alt (m)
+
+  const liveSet = new Set();
+  let countLow  = 0;
+
+  states.forEach(s => {
+    const icao    = s[0];
+    const callsign= (s[1] || '').trim() || icao;
+    const lon     = s[5];
+    const latAc   = s[6];
+    const baroAlt = s[7];       // metres (null = on ground)
+    const speed   = s[9];       // m/s
+    const geoAlt  = s[13];      // metres
+
+    // Must have position
+    if (lon == null || latAc == null) return;
+
+    // Use geo_alt if baro_alt missing
+    const alt = baroAlt ?? geoAlt ?? 0;
+
+    // Altitude filter: below 500 m (or on ground alt=0/null)
+    if (alt > MAX_ALT_M) return;
+
+    // Distance filter (strict circle not bbox)
+    const dist = haversine(lat, lng, latAc, lon);
+    if (dist > RADIUS_KM) return;
+
+    liveSet.add(icao);
+    if (alt < 150) countLow++;
+
+    const speedKmh = speed != null ? Math.round(speed * 3.6) : '?';
+    const altM     = Math.round(alt);
+    const distKm   = dist.toFixed(1);
+
+    const popupHtml = `
+      <div class="popup-inner">
+        <div class="popup-id">✈ ${callsign}</div>
+        <div class="popup-row">
+          <span class="popup-key">ICAO24</span>
+          <span class="popup-val">${icao}</span>
+        </div>
+        <div class="popup-row">
+          <span class="popup-key">גובה</span>
+          <span class="popup-val">${altM} מ'</span>
+        </div>
+        <div class="popup-row">
+          <span class="popup-key">מהירות</span>
+          <span class="popup-val">${speedKmh} קמ"ש</span>
+        </div>
+        <div class="popup-row">
+          <span class="popup-key">מרחק</span>
+          <span class="popup-val">${distKm} ק"מ</span>
+        </div>
+      </div>`;
+
+    if (aircraftMarkers[icao]) {
+      aircraftMarkers[icao].setLatLng([latAc, lon]);
+      aircraftMarkers[icao].setIcon(makeDroneIcon(alt));
+      aircraftMarkers[icao].getPopup().setContent(popupHtml);
+    } else {
+      const marker = L.marker([latAc, lon], { icon: makeDroneIcon(alt) })
+        .bindPopup(popupHtml, { maxWidth: 230, minWidth: 180 })
+        .addTo(map);
+      aircraftMarkers[icao] = marker;
+    }
+  });
+
+  // Remove stale markers
+  Object.keys(aircraftMarkers).forEach(icao => {
+    if (!liveSet.has(icao)) {
+      map.removeLayer(aircraftMarkers[icao]);
+      delete aircraftMarkers[icao];
+    }
+  });
+
+  // Update stats
+  const total = liveSet.size;
+  $('val-total').textContent  = total;
+  $('val-low').textContent    = countLow;
+  $('val-radius').textContent = RADIUS_KM;
+
+  flash('card-total');
+  updateClock();
+
+  if (total === 0) {
+    toast('אין כלי טיס נמוכים בטווח כרגע');
+  }
+}
+
+// ─── Init map ─────────────────────────────────────────────────────────────
+function initMap(lat, lng) {
+  map = L.map('map', {
+    center:          [lat, lng],
+    zoom:            11,
+    zoomControl:     true,
+    attributionControl: false
+  });
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 18,
+    attribution: '© OpenStreetMap'
+  }).addTo(map);
+
+  // Radius circle
+  L.circle([lat, lng], {
+    radius:      RADIUS_KM * 1000,
+    color:       '#00d4ff',
+    weight:      1,
+    opacity:     0.3,
+    fillColor:   '#00d4ff',
+    fillOpacity: 0.04
+  }).addTo(map);
+
+  // User marker
+  userMarker = L.marker([lat, lng], { icon: makeUserIcon(), zIndexOffset: 1000 })
+    .addTo(map)
+    .bindPopup('<div class="popup-inner"><div class="popup-id">📍 מיקומך</div></div>');
+
+  userLatLng = { lat, lng };
+  $('overlay').style.display = 'none';
+
+  // Start fetching
+  fetchAircraft();
+  refreshTimer = setInterval(fetchAircraft, REFRESH_INTERVAL_MS);
+}
+
+// ─── GPS ──────────────────────────────────────────────────────────────────
+function startGPS() {
+  if (!navigator.geolocation) {
+    $('overlay').querySelector('.overlay-sub').textContent =
+      'הדפדפן אינו תומך ב-GPS';
+    return;
+  }
+
+  navigator.geolocation.watchPosition(
+    pos => {
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+
+      if (!map) {
+        initMap(lat, lng);
+      } else {
+        userLatLng = { lat, lng };
+        userMarker.setLatLng([lat, lng]);
+      }
+    },
+    err => {
+      console.warn('GPS error:', err.message);
+      $('overlay').querySelector('.overlay-sub').textContent =
+        'לא ניתן לגשת ל-GPS. אנא אשר גישה למיקום.';
+    },
+    { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
+  );
+}
+
+// ─── Boot ─────────────────────────────────────────────────────────────────
+startGPS();
+</script>
+</body>
+</html>
