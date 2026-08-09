@@ -1,444 +1,623 @@
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>מגן שמיים · Drone Tracker</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Exo+2:wght@300;500;700&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --bg:#080d12;--panel:#0d1520;--border:#1a2d42;
-      --accent:#00d4ff;--danger:#ff3c3c;--warn:#ffd600;
-      --text:#cde3f5;--muted:#4a6a88;
-      --font-mono:'Share Tech Mono','Courier New',monospace;
-      --font-ui:'Exo 2','Segoe UI',sans-serif;
-    }
-    *{box-sizing:border-box;margin:0;padding:0}
-    html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--font-ui);overflow:hidden;-webkit-tap-highlight-color:transparent}
-    #app{display:flex;flex-direction:column;height:100dvh}
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>סורק מגמות · S&P100 / Nasdaq100</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0B1420;
+    --panel:#121D2B;
+    --panel-2:#0F1A26;
+    --border:#223145;
+    --text:#E7EDF3;
+    --muted:#7C8DA6;
+    --muted-2:#4E617A;
+    --green:#3ED598;
+    --amber:#F2B84B;
+    --rose:#F2607A;
+    --cyan:#59C7E8;
+    --mono:'JetBrains Mono',monospace;
+    --sans:'Heebo',sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:
+      radial-gradient(1200px 500px at 50% -10%, rgba(89,199,232,0.08), transparent),
+      var(--bg);
+    color:var(--text);
+    font-family:var(--sans);
+    min-height:100vh;
+    padding-bottom:60px;
+  }
+  .wrap{max-width:640px;margin:0 auto;padding:0 16px}
 
-    /* header */
-    #header{flex-shrink:0;background:var(--panel);border-bottom:1px solid var(--border);padding:10px 14px 8px;z-index:1000}
-    .header-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
-    .logo{display:flex;align-items:center;gap:8px}
-    .logo-icon{width:28px;height:28px}
-    .logo-icon svg{width:100%;height:100%}
-    .logo-title{font-family:var(--font-mono);font-size:1rem;color:var(--accent);letter-spacing:.08em}
-    .logo-sub{font-size:.58rem;color:var(--muted);letter-spacing:.15em;text-transform:uppercase}
-    .pulse-wrap{display:flex;align-items:center;gap:6px;font-family:var(--font-mono);font-size:.7rem;color:var(--muted)}
-    .pulse-dot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex-shrink:0;transition:background .3s}
-    .pulse-dot.live{background:#00e676;animation:pulse 1.6s infinite}
-    .pulse-dot.error{background:var(--danger)}
-    @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(0,230,118,.6)}70%{box-shadow:0 0 0 8px rgba(0,230,118,0)}100%{box-shadow:0 0 0 0 rgba(0,230,118,0)}}
-    .stats-bar{display:flex;gap:8px}
-    .stat-card{flex:1;background:rgba(0,212,255,.06);border:1px solid var(--border);border-radius:6px;padding:5px 8px;text-align:center}
-    .stat-value{font-family:var(--font-mono);font-size:1.25rem;line-height:1;color:var(--accent)}
-    .stat-value.danger{color:var(--danger)}
-    .stat-value.warn{color:var(--warn)}
-    .stat-label{font-size:.58rem;color:var(--muted);letter-spacing:.06em;margin-top:2px}
+  /* ---------- header ---------- */
+  header{padding:22px 0 14px;border-bottom:1px solid var(--border)}
+  .brand{display:flex;align-items:center;gap:10px}
+  .brand svg{flex-shrink:0}
+  h1{font-size:19px;font-weight:800;margin:0;letter-spacing:-0.2px}
+  .sub{color:var(--muted);font-size:12.5px;margin-top:4px;line-height:1.6}
+  .disclaimer-chip{
+    display:inline-flex;align-items:center;gap:6px;margin-top:10px;
+    background:rgba(242,184,75,0.08);border:1px solid rgba(242,184,75,0.35);
+    color:var(--amber);font-size:11.5px;padding:5px 10px;border-radius:20px;
+  }
 
-    /* source badge */
-    #sourceBadge{
-      display:inline-block;margin-top:5px;
-      font-family:var(--font-mono);font-size:.6rem;
-      color:var(--muted);letter-spacing:.05em;
-      background:rgba(255,255,255,.04);border:1px solid var(--border);
-      border-radius:4px;padding:2px 6px;
-    }
+  /* ---------- ticker tape (signature element) ---------- */
+  .tape-outer{
+    margin-top:14px;background:var(--panel-2);border:1px solid var(--border);
+    border-radius:10px;overflow:hidden;height:34px;position:relative;
+    display:flex;align-items:center;
+  }
+  .tape-outer::before,.tape-outer::after{
+    content:"";position:absolute;top:0;bottom:0;width:24px;z-index:2;
+  }
+  .tape-outer::before{right:0;background:linear-gradient(to left,var(--panel-2),transparent)}
+  .tape-outer::after{left:0;background:linear-gradient(to right,var(--panel-2),transparent)}
+  .tape-track{display:flex;gap:18px;white-space:nowrap;padding:0 16px;
+    animation:tapeScroll 22s linear infinite; font-family:var(--mono);}
+  .tape-track.paused{animation-play-state:paused}
+  @keyframes tapeScroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+  .tape-item{font-size:11px;color:var(--muted-2);display:flex;align-items:center;gap:5px}
+  .tape-dot{width:6px;height:6px;border-radius:50%;background:var(--muted-2)}
+  .tape-item.done .tape-dot{background:var(--green)}
+  .tape-item.match .tape-dot{background:var(--amber);box-shadow:0 0 6px var(--amber)}
+  .tape-item.scanning .tape-dot{background:var(--cyan);animation:pulse 0.9s ease-in-out infinite}
+  .tape-item.err .tape-dot{background:var(--rose)}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.25}}
+  .tape-idle{padding:0 16px;color:var(--muted-2);font-size:11.5px;font-family:var(--mono)}
 
-    /* map */
-    #map{flex:1;min-height:0;width:100%}
-    .leaflet-tile{filter:brightness(.75) saturate(.6) hue-rotate(195deg)}
-    .leaflet-container{background:#05090f}
+  /* ---------- cards ---------- */
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px;margin-top:14px}
+  .card h2{font-size:13px;text-transform:uppercase;letter-spacing:0.6px;color:var(--muted);margin:0 0 12px;font-weight:700}
 
-    /* popup */
-    .leaflet-popup-content-wrapper{background:var(--panel)!important;border:1px solid var(--border)!important;border-radius:10px!important;color:var(--text)!important;font-family:var(--font-mono)!important;font-size:.78rem!important;padding:0!important;box-shadow:0 4px 24px rgba(0,0,0,.6)!important}
-    .leaflet-popup-tip{background:var(--border)!important}
-    .leaflet-popup-close-button{color:var(--muted)!important;font-size:16px!important;padding:6px 8px!important}
-    .popup-inner{padding:10px 12px}
-    .popup-id{color:var(--accent);font-size:.85rem;font-weight:bold;margin-bottom:6px}
-    .popup-row{display:flex;justify-content:space-between;gap:16px;padding:3px 0;border-bottom:1px solid var(--border)}
-    .popup-row:last-child{border-bottom:none}
-    .popup-key{color:var(--muted)}
-    .popup-val{color:var(--text);text-align:left}
+  .row{display:flex;gap:10px;margin-bottom:10px}
+  .row > *{flex:1}
+  label{display:block;font-size:12.5px;color:var(--muted);margin-bottom:5px}
+  input[type=text],input[type=password],input[type=number],select{
+    width:100%;background:var(--panel-2);border:1px solid var(--border);color:var(--text);
+    padding:10px 11px;border-radius:9px;font-size:14px;font-family:var(--sans);
+  }
+  input:focus,select:focus{outline:none;border-color:var(--cyan)}
+  input[type=number]{font-family:var(--mono)}
 
-    /* error panel */
-    #errPanel{
-      display:none;position:fixed;bottom:0;left:0;right:0;
-      background:#100a0a;border-top:1px solid var(--danger);
-      padding:10px 14px;z-index:2500;
-      font-family:var(--font-mono);font-size:.7rem;color:var(--danger);
-    }
-    #errPanel.show{display:block}
-    #errPanel strong{color:#ff7070}
-    #retryBtn{
-      margin-top:6px;display:inline-block;
-      background:rgba(255,60,60,.15);border:1px solid var(--danger);
-      color:var(--danger);border-radius:6px;padding:4px 12px;
-      font-family:var(--font-mono);font-size:.7rem;cursor:pointer;
-    }
-    #retryBtn:active{opacity:.7}
+  .keyrow{display:flex;gap:8px}
+  .keyrow input{flex:1}
+  .btn{
+    cursor:pointer;border:none;border-radius:9px;padding:10px 14px;font-size:13.5px;
+    font-weight:700;font-family:var(--sans);transition:transform .1s ease, opacity .15s ease;
+  }
+  .btn:active{transform:scale(0.97)}
+  .btn-ghost{background:var(--panel-2);color:var(--text);border:1px solid var(--border)}
+  .btn-primary{background:var(--green);color:#08130F}
+  .btn-stop{background:var(--rose);color:#2A0810}
+  .btn-block{width:100%;padding:13px;font-size:14.5px}
+  .key-status{font-size:11px;color:var(--muted-2);margin-top:6px}
+  .key-status.ok{color:var(--green)}
 
-    /* overlay */
-    #overlay{position:fixed;inset:0;background:rgba(8,13,18,.97);z-index:3000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;font-family:var(--font-mono)}
-    .ov-spinner{width:56px;height:56px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite}
-    @keyframes spin{to{transform:rotate(360deg)}}
-    .ov-text{color:var(--text);font-size:.95rem;text-align:center;line-height:1.8}
-    .ov-sub{color:var(--muted);font-size:.7rem}
+  .chipset{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{
+    border:1px solid var(--border);background:var(--panel-2);color:var(--muted);
+    padding:8px 13px;border-radius:20px;font-size:12.5px;cursor:pointer;font-weight:500;
+    user-select:none;
+  }
+  .chip.on{border-color:var(--cyan);color:var(--cyan);background:rgba(89,199,232,0.08)}
 
-    @keyframes flashBorder{0%{border-color:var(--accent)}100%{border-color:var(--border)}}
-    .flash{animation:flashBorder .7s ease-out}
-  </style>
+  details{margin-top:10px}
+  summary{cursor:pointer;font-size:12.5px;color:var(--muted);list-style:none;display:flex;align-items:center;gap:6px}
+  summary::-webkit-details-marker{display:none}
+  summary:before{content:"▸";font-size:10px;transition:transform .15s}
+  details[open] summary:before{transform:rotate(90deg)}
+  details .row{margin-top:12px}
+
+  .progress-wrap{margin-top:10px;display:none}
+  .progress-wrap.show{display:block}
+  .progress-bar-bg{height:6px;background:var(--panel-2);border-radius:4px;overflow:hidden;border:1px solid var(--border)}
+  .progress-bar-fill{height:100%;background:linear-gradient(90deg,var(--cyan),var(--green));width:0%;transition:width .3s}
+  .progress-text{font-size:11.5px;color:var(--muted);margin-top:6px;font-family:var(--mono);display:flex;justify-content:space-between}
+
+  /* ---------- results ---------- */
+  .results-head{display:flex;justify-content:space-between;align-items:baseline;margin-top:22px;margin-bottom:10px}
+  .results-head h2{margin:0}
+  .results-count{font-family:var(--mono);font-size:12px;color:var(--muted-2)}
+  .empty-state{
+    text-align:center;color:var(--muted-2);font-size:13px;padding:34px 10px;
+    border:1px dashed var(--border);border-radius:14px;margin-top:8px;line-height:1.7;
+  }
+
+  .stock-card{
+    background:var(--panel);border:1px solid var(--border);border-radius:14px;
+    padding:14px 16px;margin-bottom:10px;position:relative;overflow:hidden;
+  }
+  .stock-card::before{content:"";position:absolute;top:0;right:0;bottom:0;width:4px}
+  .stock-card.trend-up::before{background:var(--green)}
+  .stock-card.trend-flat::before{background:var(--amber)}
+  .stock-top{display:flex;justify-content:space-between;align-items:center}
+  .sym{font-family:var(--mono);font-weight:700;font-size:16px}
+  .sym-idx{font-size:10px;color:var(--muted-2);margin-right:6px;font-family:var(--sans)}
+  .price{font-family:var(--mono);font-size:16px;font-weight:700}
+  .badges{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+  .badge{font-size:10.5px;padding:3px 8px;border-radius:20px;font-weight:700;font-family:var(--sans)}
+  .badge.up{background:rgba(62,213,152,0.12);color:var(--green)}
+  .badge.flat{background:rgba(242,184,75,0.12);color:var(--amber)}
+  .badge.vol{background:rgba(89,199,232,0.12);color:var(--cyan)}
+  .badge.near{background:rgba(231,237,243,0.08);color:var(--text)}
+
+  .stock-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:12px}
+  .stat{background:var(--panel-2);border:1px solid var(--border);border-radius:9px;padding:8px 9px}
+  .stat-label{font-size:9.5px;color:var(--muted-2);text-transform:uppercase;letter-spacing:0.4px}
+  .stat-val{font-family:var(--mono);font-size:13px;margin-top:3px;font-weight:700}
+  .stat-val.rose{color:var(--rose)}
+  .stat-val.green{color:var(--green)}
+
+  .stock-foot{
+    margin-top:10px;padding-top:10px;border-top:1px dashed var(--border);
+    display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted);
+    font-family:var(--mono);
+  }
+
+  .err-list{margin-top:10px;font-size:11px;color:var(--muted-2);font-family:var(--mono);line-height:1.8}
+
+  footer{margin-top:30px;padding-top:16px;border-top:1px solid var(--border);
+    font-size:11px;color:var(--muted-2);line-height:1.8;text-align:center}
+</style>
 </head>
 <body>
+<div class="wrap">
 
-<div id="overlay">
-  <div class="ov-spinner"></div>
-  <div class="ov-text">מגן שמיים<br><span class="ov-sub" id="ovMsg">ממתין לאישור GPS…</span></div>
-</div>
+  <header>
+    <div class="brand">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+        <path d="M3 17L9 11L13 15L21 6" stroke="#3ED598" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M15 6H21V12" stroke="#3ED598" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <h1>סורק מגמות</h1>
+    </div>
+    <div class="sub">איתור מניות מ-Nasdaq 100 / S&P 100 הנסחרות סמוך לממוצע נע 150/200 עולה, עם הצעת סטופ-לוס לפי תנודתיות (ATR).</div>
+    <div class="disclaimer-chip">⚠ לא ייעוץ השקעות — כלי ניתוח טכני בלבד</div>
+  </header>
 
-<div id="app">
-  <div id="header">
-    <div class="header-top">
-      <div class="logo">
-        <div class="logo-icon">
-          <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="16" cy="16" r="4" fill="#00d4ff"/>
-            <rect x="13" y="4"  width="6" height="6" rx="2" fill="#00d4ff" opacity=".7"/>
-            <rect x="13" y="22" width="6" height="6" rx="2" fill="#00d4ff" opacity=".7"/>
-            <rect x="4"  y="13" width="6" height="6" rx="2" fill="#00d4ff" opacity=".7"/>
-            <rect x="22" y="13" width="6" height="6" rx="2" fill="#00d4ff" opacity=".7"/>
-            <line x1="13" y1="13" x2="8"  y2="8"  stroke="#00d4ff" stroke-width="1.5" opacity=".4"/>
-            <line x1="19" y1="13" x2="24" y2="8"  stroke="#00d4ff" stroke-width="1.5" opacity=".4"/>
-            <line x1="13" y1="19" x2="8"  y2="24" stroke="#00d4ff" stroke-width="1.5" opacity=".4"/>
-            <line x1="19" y1="19" x2="24" y2="24" stroke="#00d4ff" stroke-width="1.5" opacity=".4"/>
-          </svg>
+  <div class="tape-outer" id="tapeOuter">
+    <div class="tape-idle" id="tapeIdle">מוכן לסריקה · הזן מפתח API ולחץ "התחל סריקה"</div>
+    <div class="tape-track" id="tapeTrack" style="display:none"></div>
+  </div>
+
+  <!-- API KEY -->
+  <div class="card">
+    <h2>מפתח API — Twelve Data</h2>
+    <div class="keyrow">
+      <input type="password" id="apiKey" placeholder="הדבק כאן את מפתח ה-API שלך">
+      <button class="btn btn-ghost" id="saveKeyBtn">שמור</button>
+    </div>
+    <div class="key-status" id="keyStatus">אין מפתח שמור. הרשמה חינמית: twelvedata.com (עד 800 בקשות/יום, 8/דקה).</div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div class="card">
+    <h2>מדדים לסריקה</h2>
+    <div class="chipset" id="indexChips">
+      <div class="chip on" data-idx="nasdaq100">Nasdaq 100</div>
+      <div class="chip on" data-idx="sp100">S&P 100</div>
+    </div>
+
+    <div style="margin-top:14px">
+      <label>היקף סריקה</label>
+      <div class="chipset" id="scopeChips">
+        <div class="chip" data-scope="quick">מהירה — כ-40 המניות הגדולות (~5 דק')</div>
+        <div class="chip on" data-scope="full">מלאה — כל הרשימה (~20-25 דק')</div>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:14px">
+      <div>
+        <label>ממוצע נע (SMA)</label>
+        <select id="maPeriod">
+          <option value="150">150 יום</option>
+          <option value="200" selected>200 יום</option>
+        </select>
+      </div>
+      <div>
+        <label>קרבה מקסימלית לממוצע (%)</label>
+        <input type="number" id="proximity" value="3" min="0.5" max="15" step="0.5">
+      </div>
+    </div>
+
+    <details>
+      <summary>הגדרות מתקדמות</summary>
+      <div class="row">
+        <div>
+          <label>מכפיל ATR לסטופ-לוס</label>
+          <input type="number" id="atrMult" value="2" min="0.5" max="5" step="0.25">
         </div>
         <div>
-          <div class="logo-title">מגן שמיים</div>
-          <div class="logo-sub">Drone Radar · 30km</div>
+          <label>סף ווליום גבוה (יחסית לממוצע 20 יום)</label>
+          <input type="number" id="volThresh" value="1.5" min="1" max="5" step="0.1">
         </div>
       </div>
-      <div class="pulse-wrap">
-        <div class="pulse-dot" id="liveDot"></div>
-        <span id="lastUpdate">--:--:--</span>
+      <div class="row">
+        <div>
+          <label>חלון בדיקת שיפוע הממוצע (ימים)</label>
+          <input type="number" id="slopeLookback" value="15" min="5" max="40" step="1">
+        </div>
+        <div>
+          <label>&nbsp;</label>
+          <div class="chip" id="requireVolChip" style="text-align:center">רק מניות עם ווליום גבוה היום</div>
+        </div>
       </div>
-    </div>
-    <div class="stats-bar">
-      <div class="stat-card" id="card-total">
-        <div class="stat-value" id="val-total">—</div>
-        <div class="stat-label">כלי טיס נמוכים</div>
-      </div>
-      <div class="stat-card" id="card-low">
-        <div class="stat-value danger" id="val-low">—</div>
-        <div class="stat-label">מתחת ל-150 מ'</div>
-      </div>
-      <div class="stat-card" id="card-next">
-        <div class="stat-value warn" id="val-next">10</div>
-        <div class="stat-label">שניות לרענון</div>
-      </div>
-    </div>
-    <div style="text-align:center"><span id="sourceBadge">ממתין…</span></div>
+    </details>
   </div>
-  <div id="map"></div>
-</div>
 
-<!-- Error panel -->
-<div id="errPanel">
-  <strong>⚠ שגיאת רשת — פרטים:</strong><br>
-  <span id="errMsg">—</span><br>
-  <button id="retryBtn" onclick="retryNow()">↺ נסה עכשיו</button>
+  <!-- POSITION SIZING -->
+  <div class="card">
+    <h2>גודל פוזיציה (אופציונלי)</h2>
+    <div class="row">
+      <div>
+        <label>הון למסחר ($)</label>
+        <input type="number" id="capital" placeholder="לדוגמה 10000" min="0" step="100">
+      </div>
+      <div>
+        <label>סיכון לעסקה (%)</label>
+        <input type="number" id="riskPct" value="1" min="0.1" max="10" step="0.1">
+      </div>
+    </div>
+  </div>
+
+  <button class="btn btn-primary btn-block" id="scanBtn">▶ התחל סריקה</button>
+  <div class="progress-wrap" id="progressWrap">
+    <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressFill"></div></div>
+    <div class="progress-text"><span id="progressLabel">סורק...</span><span id="progressCount">0/0</span></div>
+  </div>
+
+  <div class="results-head">
+    <h2 style="font-size:13px;text-transform:uppercase;letter-spacing:0.6px;color:var(--muted);font-weight:700;margin:0">תוצאות</h2>
+    <span class="results-count" id="resultsCount"></span>
+  </div>
+  <div id="resultsContainer">
+    <div class="empty-state" id="emptyState">עדיין אין תוצאות.<br>הרץ סריקה כדי לראות מניות הקרובות לממוצע הנע שלהן, עם מגמה עולה או ישרה.</div>
+  </div>
+  <div class="err-list" id="errList"></div>
+
+  <footer>
+    כלי זה מבצע ניתוח טכני אוטומטי בלבד (ממוצעים נעים, ATR, ווליום) ואינו המלצת השקעה, ייעוץ פיננסי או הבטחת תשואה.
+    מסחר בשוק ההון כרוך בסיכון לאובדן קרן. קבל החלטות מסחר על דעת עצמך או בהתייעצות עם יועץ מוסמך.
+    רשימות המדדים הן הצצה עדכנית ועשויות שלא לשקף שינויי הרכב אחרונים במדויק.
+  </footer>
 </div>
 
 <script>
-/* ══════════════════════════════════════════════
-   CONFIG
-══════════════════════════════════════════════ */
-const REFRESH_MS = 10_000;
-const RADIUS_KM  = 30;
-const RADIUS_NM  = Math.ceil(RADIUS_KM / 1.852);  // 17 NM
-const MAX_ALT_FT = 1640;   // 500 m
-const LOW_ALT_FT = 492;    // 150 m
+/* ============================= TICKER UNIVERSE ============================= */
+const NASDAQ100 = ["NVDA","AAPL","MSFT","AMZN","GOOGL","GOOG","AVGO","SPCX","META","TSLA","MU","WMT","AMD","ASML","INTC","CSCO","AMAT","COST","PLTR","LRCX","NFLX","ARM","PANW","TXN","KLAC","LIN","AMGN","CRWD","MRVL","SHOP","ADI","TMUS","PEP","STX","SNDK","QCOM","GILD","BKNG","WDC","ISRG","PDD","VRTX","SBUX","FTNT","APP","ADP","ADBE","ABNB","CEG","DASH","CSX","CDNS","MAR","MELI","CMCSA","INTU","MNST","DDOG","ROST","CTAS","REGN","MDLZ","SNPS","HON","ORLY","PCAR","LITE","AEP","MPWR","WBD","BKR","NXPI","TER","FAST","ALAB","FANG","ADSK","HONA","RKLB","PYPL","CRWV","XEL","NBIS","FER","CCEP","EXC","MCHP","IDXX","AXON","TTWO","ODFL","TRI","WDAY","PAYX","KDP","ROP","MSTR","GEHC","DXCM","KHC","ALNY","CPRT"];
 
-/* ══════════════════════════════════════════════
-   API SOURCES — tried in order, auto-fallback
-══════════════════════════════════════════════ */
-const SOURCES = [
-  {
-    name: 'adsb.fi',
-    url: (lat,lon) => `https://api.adsb.fi/v1/aircraft?lat=${lat}&lon=${lon}&dist=${RADIUS_NM}`,
-    parse: d => d.ac || []
-  },
-  {
-    name: 'airplanes.live',
-    url: (lat,lon) => `https://api.airplanes.live/v2/point/${lat}/${lon}/${RADIUS_NM}`,
-    parse: d => d.ac || []
-  },
-  {
-    name: 'OpenSky (proxy)',
-    url: (lat,lon) => {
-      const d = RADIUS_KM / 111.32;
-      const base = `https://opensky-network.org/api/states/all?lamin=${(lat-d).toFixed(4)}&lomin=${(lon-d).toFixed(4)}&lamax=${(lat+d).toFixed(4)}&lomax=${(lon+d).toFixed(4)}`;
-      return `https://corsproxy.io/?url=${encodeURIComponent(base)}`;
-    },
-    parse: d => {
-      // OpenSky format — convert to unified ac[] format
-      return (d.states || []).map(s => ({
-        hex: s[0], flight: s[1],
-        lon: s[5], lat: s[6],
-        alt_baro: s[7] != null ? s[7] * 3.281 : null,  // m→ft
-        gs: s[9] != null ? s[9] * 1.944 : null           // m/s→kn
-      }));
-    }
+const SP100 = ["AAPL","MSFT","NVDA","AMZN","GOOGL","GOOG","META","BRK.B","AVGO","TSLA","JPM","LLY","V","UNH","XOM","MA","JNJ","HD","PG","COST","ABBV","MRK","CVX","WMT","BAC","KO","PEP","ADBE","CRM","TMO","MCD","CSCO","ACN","ABT","NFLX","LIN","DHR","WFC","TXN","PM","DIS","VZ","INTC","CMCSA","NKE","AMD","INTU","IBM","QCOM","AMGN","UPS","HON","LOW","UNP","CAT","SPGI","GS","BA","RTX","NEE","PLD","ELV","SBUX","DE","AXP","MDT","GE","BKNG","ISRG","BLK","GILD","ADI","LMT","MDLZ","SYK","TJX","MMC","ADP","VRTX","C","SCHW","CVS","MO","ZTS","CI","SO","PYPL","DUK","BDX","BSX","EOG","CB","PGR","TGT","USB","MS","T","COP","FDX","EMR","SLB","ORCL"];
+
+/* ============================= STATE ============================= */
+let state = {
+  indexes: {nasdaq100:true, sp100:true},
+  scope: 'full',
+  requireVol: false,
+  scanning: false,
+  cancelRequested: false,
+  results: [],
+  errors: []
+};
+
+/* ============================= STORAGE HELPERS ============================= */
+async function storGet(key){
+  try{ const r = await window.storage.get(key,false); return r ? JSON.parse(r.value) : null; }
+  catch(e){ return null; }
+}
+async function storSet(key,val){
+  try{ await window.storage.set(key, JSON.stringify(val), false); }catch(e){}
+}
+
+/* ============================= INIT ============================= */
+async function init(){
+  const savedKey = await storGet('td-api-key');
+  if(savedKey){
+    document.getElementById('apiKey').value = savedKey;
+    setKeyStatus(true);
   }
-];
+  document.getElementById('saveKeyBtn').onclick = async ()=>{
+    const v = document.getElementById('apiKey').value.trim();
+    if(!v){ setKeyStatus(false); return; }
+    await storSet('td-api-key', v);
+    setKeyStatus(true);
+  };
 
-let activeSource = 0;  // index into SOURCES[]
-
-/* ══════════════════════════════════════════════
-   STATE
-══════════════════════════════════════════════ */
-let map, userMarker, userLatLng;
-let markers = {};
-let countdown = 10;
-let countdownTimer = null;
-let fetchTimer    = null;
-
-/* ══════════════════════════════════════════════
-   HELPERS
-══════════════════════════════════════════════ */
-const $ = id => document.getElementById(id);
-const ft2m  = ft => Math.round(ft * 0.3048);
-const kn2kh = kn => Math.round(kn * 1.852);
-
-function dist_km(la1,lo1,la2,lo2){
-  const R=6371,r=Math.PI/180;
-  const dL=(la2-la1)*r,dO=(lo2-lo1)*r;
-  const a=Math.sin(dL/2)**2+Math.cos(la1*r)*Math.cos(la2*r)*Math.sin(dO/2)**2;
-  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
-}
-
-function flash(id){
-  const el=$(id);el.classList.remove('flash');void el.offsetWidth;el.classList.add('flash');
-}
-
-function showError(msg){
-  $('errMsg').textContent = msg;
-  $('errPanel').classList.add('show');
-  $('liveDot').className = 'pulse-dot error';
-  console.error('[DroneRadar]', msg);
-}
-
-function clearError(){
-  $('errPanel').classList.remove('show');
-}
-
-function setBadge(text){
-  $('sourceBadge').textContent = 'מקור: ' + text;
-}
-
-/* ══════════════════════════════════════════════
-   COUNTDOWN TIMER (visual)
-══════════════════════════════════════════════ */
-function startCountdown(){
-  clearInterval(countdownTimer);
-  countdown = REFRESH_MS / 1000;
-  $('val-next').textContent = countdown;
-  countdownTimer = setInterval(() => {
-    countdown = Math.max(0, countdown - 1);
-    $('val-next').textContent = countdown;
-  }, 1000);
-}
-
-/* ══════════════════════════════════════════════
-   ICONS
-══════════════════════════════════════════════ */
-function droneIcon(altFt){
-  const col  = altFt < LOW_ALT_FT ? '#ff3c3c' : '#ff8c00';
-  const glow = altFt < LOW_ALT_FT ? 'rgba(255,60,60,.55)' : 'rgba(255,140,0,.45)';
-  const svg  = `<svg xmlns="http://www.w3.org/2000/svg" width="34" height="34" viewBox="0 0 32 32">
-    <circle cx="16" cy="16" r="5" fill="${col}" opacity=".18"/>
-    <circle cx="16" cy="16" r="3" fill="${col}"/>
-    <rect x="13.5" y="5"    width="5" height="5" rx="2" fill="${col}"/>
-    <rect x="13.5" y="22"   width="5" height="5" rx="2" fill="${col}"/>
-    <rect x="5"    y="13.5" width="5" height="5" rx="2" fill="${col}"/>
-    <rect x="22"   y="13.5" width="5" height="5" rx="2" fill="${col}"/>
-    <line x1="13.5" y1="13.5" x2="9"  y2="9"  stroke="${col}" stroke-width="1.5" opacity=".6"/>
-    <line x1="18.5" y1="13.5" x2="23" y2="9"  stroke="${col}" stroke-width="1.5" opacity=".6"/>
-    <line x1="13.5" y1="18.5" x2="9"  y2="23" stroke="${col}" stroke-width="1.5" opacity=".6"/>
-    <line x1="18.5" y1="18.5" x2="23" y2="23" stroke="${col}" stroke-width="1.5" opacity=".6"/>
-  </svg>`;
-  return L.divIcon({
-    html:`<div style="filter:drop-shadow(0 0 5px ${glow})">${svg}</div>`,
-    iconSize:[34,34],iconAnchor:[17,17],popupAnchor:[0,-17],className:''
+  document.querySelectorAll('#indexChips .chip').forEach(chip=>{
+    chip.onclick = ()=>{
+      chip.classList.toggle('on');
+      state.indexes[chip.dataset.idx] = chip.classList.contains('on');
+    };
   });
-}
-
-function userIcon(){
-  return L.divIcon({
-    html:`<div style="width:16px;height:16px;border-radius:50%;
-      background:rgba(0,120,255,.9);border:3px solid #fff;
-      box-shadow:0 0 0 5px rgba(0,120,255,.3)"></div>`,
-    iconSize:[16,16],iconAnchor:[8,8],className:''
+  document.querySelectorAll('#scopeChips .chip').forEach(chip=>{
+    chip.onclick = ()=>{
+      document.querySelectorAll('#scopeChips .chip').forEach(c=>c.classList.remove('on'));
+      chip.classList.add('on');
+      state.scope = chip.dataset.scope;
+    };
   });
+  document.getElementById('requireVolChip').onclick = (e)=>{
+    e.target.classList.toggle('on');
+    state.requireVol = e.target.classList.contains('on');
+  };
+
+  document.getElementById('scanBtn').onclick = onScanClick;
+}
+function setKeyStatus(ok){
+  const el = document.getElementById('keyStatus');
+  if(ok){ el.textContent = '✓ מפתח שמור במכשיר זה בלבד.'; el.classList.add('ok'); }
+  else{ el.textContent = 'אנא הדבק מפתח API תקין.'; el.classList.remove('ok'); }
 }
 
-/* ══════════════════════════════════════════════
-   POPUP
-══════════════════════════════════════════════ */
-function makePopup(ac, d){
-  const cs   = (ac.flight||ac.hex||'').trim()||ac.hex;
-  const altFt= typeof ac.alt_baro==='number' ? Math.round(ac.alt_baro) : 0;
-  const altM = ft2m(altFt);
-  const spd  = ac.gs!=null ? kn2kh(ac.gs)+' קמ"ש' : '?';
-  const sq   = ac.squawk||'—';
-  return `<div class="popup-inner">
-    <div class="popup-id">✈ ${cs}</div>
-    <div class="popup-row"><span class="popup-key">ICAO24</span><span class="popup-val">${ac.hex}</span></div>
-    <div class="popup-row"><span class="popup-key">גובה</span><span class="popup-val">${altM} מ' (${altFt} ft)</span></div>
-    <div class="popup-row"><span class="popup-key">מהירות</span><span class="popup-val">${spd}</span></div>
-    <div class="popup-row"><span class="popup-key">מרחק</span><span class="popup-val">${d.toFixed(1)} ק"מ</span></div>
-    <div class="popup-row"><span class="popup-key">Squawk</span><span class="popup-val">${sq}</span></div>
-  </div>`;
+/* ============================= UNIVERSE BUILD ============================= */
+function buildUniverse(){
+  let list = [];
+  const tagged = [];
+  if(state.indexes.nasdaq100) NASDAQ100.forEach(s=>tagged.push({s,src:'NDX'}));
+  if(state.indexes.sp100) SP100.forEach(s=>tagged.push({s,src:'SPX'}));
+  const seen = new Map();
+  tagged.forEach(t=>{
+    if(!seen.has(t.s)) seen.set(t.s, t.src);
+    else if(seen.get(t.s) !== t.src) seen.set(t.s, 'שניהם');
+  });
+  list = Array.from(seen.entries()).map(([s,src])=>({symbol:s, src}));
+  if(state.scope === 'quick') list = list.slice(0, 40);
+  return list;
 }
 
-/* ══════════════════════════════════════════════
-   FETCH — try each source, auto-fallback
-══════════════════════════════════════════════ */
-async function tryFetch(lat, lon) {
-  const errors = [];
+/* ============================= TICKER TAPE UI ============================= */
+let tapeStatuses = {};
+function initTape(universe){
+  tapeStatuses = {};
+  universe.forEach(u=> tapeStatuses[u.symbol] = 'pending');
+  renderTape();
+  document.getElementById('tapeIdle').style.display='none';
+  document.getElementById('tapeTrack').style.display='flex';
+}
+function renderTape(){
+  const track = document.getElementById('tapeTrack');
+  const syms = Object.keys(tapeStatuses);
+  const build = () => syms.map(s=>{
+    const st = tapeStatuses[s];
+    const cls = st==='done'?'done':st==='scanning'?'scanning':st==='match'?'match':st==='err'?'err':'';
+    return `<span class="tape-item ${cls}"><span class="tape-dot"></span>${s}</span>`;
+  }).join('');
+  track.innerHTML = build() + build(); // duplicate for seamless loop
+}
+function setTapeStatus(sym, status){
+  tapeStatuses[sym] = status;
+  renderTape();
+}
+function tapeIdle(){
+  document.getElementById('tapeIdle').style.display='block';
+  document.getElementById('tapeTrack').style.display='none';
+}
 
-  for (let i = 0; i < SOURCES.length; i++) {
-    const src = SOURCES[i];
-    const url = src.url(lat, lon);
-    console.log(`[DroneRadar] trying ${src.name}: ${url}`);
-    try {
-      const res = await fetch(url, {
-        signal: AbortSignal.timeout(9000),
-        headers: { 'Accept': 'application/json' }
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
-      const data = await res.json();
-      const aircraft = src.parse(data);
-      activeSource = i;
-      setBadge(src.name);
-      console.log(`[DroneRadar] ✓ ${src.name} → ${aircraft.length} aircraft`);
-      return aircraft;  // success
-    } catch(e) {
-      const msg = `${src.name}: ${e.message}`;
-      errors.push(msg);
-      console.warn(`[DroneRadar] ✗ ${msg}`);
-    }
+/* ============================= DATA FETCH ============================= */
+async function fetchDaily(symbol, apiKey){
+  const cacheKey = `td-cache:${symbol}`;
+  const today = new Date().toISOString().slice(0,10);
+  const cached = await storGet(cacheKey);
+  if(cached && cached.date === today && cached.values){
+    return {values: cached.values, fromCache:true};
   }
-
-  // all sources failed
-  throw new Error(errors.join(' | '));
+  const url = `https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(symbol)}&interval=1day&outputsize=260&apikey=${encodeURIComponent(apiKey)}`;
+  const resp = await fetch(url);
+  const data = await resp.json();
+  if(data.status === 'error' || data.code >= 400){
+    throw new Error(data.message || 'שגיאת API');
+  }
+  if(!data.values || !Array.isArray(data.values)){
+    throw new Error('אין נתונים');
+  }
+  await storSet(cacheKey, {date: today, values: data.values});
+  return {values: data.values, fromCache:false};
 }
 
-/* ══════════════════════════════════════════════
-   UPDATE MAP
-══════════════════════════════════════════════ */
-async function fetchAircraft(){
-  if (!userLatLng) return;
-  const {lat, lng} = userLatLng;
-  startCountdown();
+/* ============================= INDICATOR MATH ============================= */
+function computeSignal(values, cfg){
+  // API returns newest-first; reverse to chronological order
+  const chron = values.slice().reverse().map(v=>({
+    date: v.datetime, open:+v.open, high:+v.high, low:+v.low, close:+v.close, volume:+v.volume
+  }));
+  const n = chron.length;
+  const maPeriod = cfg.maPeriod;
+  const slopeLookback = cfg.slopeLookback;
+  if(n < maPeriod + slopeLookback + 5) throw new Error('אין מספיק היסטוריה');
 
-  let aircraft;
-  try {
-    aircraft = await tryFetch(lat, lng);
-    clearError();
-    $('liveDot').className = 'pulse-dot live';
-  } catch(e) {
-    showError(e.message);
+  const closes = chron.map(c=>c.close);
+  const sma = (endIdxExclusive, period) => {
+    let sum=0;
+    for(let i=endIdxExclusive-period;i<endIdxExclusive;i++) sum += closes[i];
+    return sum/period;
+  };
+  const smaNow = sma(n, maPeriod);
+  const smaPast = sma(n - slopeLookback, maPeriod);
+  const trendPct = ((smaNow - smaPast)/smaPast)*100;
+
+  let trendLabel, trendClass;
+  if(trendPct > 0.3){ trendLabel='עולה'; trendClass='up'; }
+  else if(trendPct >= -0.1){ trendLabel='ישר'; trendClass='flat'; }
+  else { trendLabel='יורד'; trendClass='down'; }
+
+  const lastClose = closes[n-1];
+  const distPct = ((lastClose - smaNow)/smaNow)*100;
+
+  // ATR14 (simple average of true range)
+  const atrPeriod = 14;
+  let trSum = 0;
+  for(let i=n-atrPeriod;i<n;i++){
+    const cur = chron[i], prev = chron[i-1];
+    const tr = Math.max(cur.high-cur.low, Math.abs(cur.high-prev.close), Math.abs(cur.low-prev.close));
+    trSum += tr;
+  }
+  const atr = trSum/atrPeriod;
+
+  // volume vs 20-day avg (excluding today)
+  let volSum=0;
+  for(let i=n-21;i<n-1;i++) volSum += chron[i].volume;
+  const avgVol20 = volSum/20;
+  const lastVol = chron[n-1].volume;
+  const volRatio = avgVol20>0 ? lastVol/avgVol20 : 0;
+
+  const stopLoss = lastClose - cfg.atrMult*atr;
+  const riskPerShare = lastClose - stopLoss;
+  const riskPct = (riskPerShare/lastClose)*100;
+
+  return {
+    lastClose, smaNow, distPct, trendPct, trendLabel, trendClass,
+    atr, volRatio, stopLoss, riskPerShare, riskPct,
+    highVolume: volRatio >= cfg.volThresh
+  };
+}
+
+/* ============================= SCAN LOOP ============================= */
+async function onScanClick(){
+  if(state.scanning){
+    state.cancelRequested = true;
     return;
   }
+  const apiKey = document.getElementById('apiKey').value.trim();
+  if(!apiKey){ alert('אנא הזן ושמור מפתח API של Twelve Data תחילה.'); return; }
+  if(!state.indexes.nasdaq100 && !state.indexes.sp100){ alert('בחר לפחות מדד אחד.'); return; }
 
-  const liveSet = new Set();
-  let countLow  = 0;
+  const cfg = {
+    maPeriod: parseInt(document.getElementById('maPeriod').value,10),
+    proximity: parseFloat(document.getElementById('proximity').value),
+    atrMult: parseFloat(document.getElementById('atrMult').value),
+    volThresh: parseFloat(document.getElementById('volThresh').value),
+    slopeLookback: parseInt(document.getElementById('slopeLookback').value,10)
+  };
 
-  aircraft.forEach(ac => {
-    const hex  = ac.hex;
-    const lat2 = ac.lat;
-    const lon2 = ac.lon;
-    if (!hex || lat2==null || lon2==null) return;
+  const universe = buildUniverse();
+  state.results = [];
+  state.errors = [];
+  renderResults();
+  initTape(universe);
 
-    const altFt = typeof ac.alt_baro==='number' ? ac.alt_baro
-                : ac.alt_baro==='ground'        ? 0
-                : typeof ac.alt_geom==='number'  ? ac.alt_geom
-                : 9999;
+  state.scanning = true;
+  state.cancelRequested = false;
+  const btn = document.getElementById('scanBtn');
+  btn.textContent = '■ עצור סריקה';
+  btn.classList.remove('btn-primary'); btn.classList.add('btn-stop');
+  document.getElementById('progressWrap').classList.add('show');
 
-    if (altFt > MAX_ALT_FT) return;
+  const total = universe.length;
+  let done = 0;
+  const MIN_GAP_MS = 7600; // ~7.9 req/min, safely under 8/min free tier
+  let lastCallTime = 0;
 
-    const d = dist_km(lat, lng, lat2, lon2);
-    if (d > RADIUS_KM) return;
+  for(const item of universe){
+    if(state.cancelRequested) break;
+    setTapeStatus(item.symbol,'scanning');
+    updateProgress(done,total,item.symbol);
+    try{
+      const now = Date.now();
+      const sinceLast = now - lastCallTime;
+      const {values, fromCache} = await (async ()=>{
+        // rate-limit only real network calls
+        const cacheKey = `td-cache:${item.symbol}`;
+        const today = new Date().toISOString().slice(0,10);
+        const cached = await storGet(cacheKey);
+        if(cached && cached.date===today && cached.values) return {values:cached.values, fromCache:true};
+        if(sinceLast < MIN_GAP_MS){
+          await sleep(MIN_GAP_MS - sinceLast);
+        }
+        lastCallTime = Date.now();
+        return await fetchDaily(item.symbol, apiKey);
+      })();
 
-    liveSet.add(hex);
-    if (altFt <= LOW_ALT_FT) countLow++;
-
-    const html = makePopup(ac, d);
-
-    if (markers[hex]) {
-      markers[hex].setLatLng([lat2, lon2]);
-      markers[hex].setIcon(droneIcon(altFt));
-      markers[hex].getPopup().setContent(html);
-    } else {
-      markers[hex] = L.marker([lat2,lon2],{icon:droneIcon(altFt)})
-        .bindPopup(html,{maxWidth:240,minWidth:190})
-        .addTo(map);
+      const sig = computeSignal(values, cfg);
+      const passes = Math.abs(sig.distPct) <= cfg.proximity && sig.trendLabel !== 'יורד' &&
+                     (!state.requireVol || sig.highVolume);
+      if(passes){
+        state.results.push({symbol:item.symbol, src:item.src, ...sig});
+        state.results.sort((a,b)=> Math.abs(a.distPct) - Math.abs(b.distPct));
+        setTapeStatus(item.symbol,'match');
+        renderResults();
+      } else {
+        setTapeStatus(item.symbol,'done');
+      }
+    }catch(err){
+      state.errors.push(`${item.symbol}: ${err.message}`);
+      setTapeStatus(item.symbol,'err');
+      renderErrors();
     }
-  });
+    done++;
+    updateProgress(done,total,'');
+  }
 
-  Object.keys(markers).forEach(hex => {
-    if (!liveSet.has(hex)) { map.removeLayer(markers[hex]); delete markers[hex]; }
-  });
-
-  $('val-total').textContent = liveSet.size;
-  $('val-low').textContent   = countLow;
-  $('lastUpdate').textContent= new Date().toLocaleTimeString('he-IL',{hour12:false});
-  flash('card-total');
+  state.scanning = false;
+  btn.textContent = '▶ התחל סריקה';
+  btn.classList.remove('btn-stop'); btn.classList.add('btn-primary');
+  updateProgress(done,total, state.cancelRequested ? 'הסריקה נעצרה' : 'הסריקה הושלמה');
 }
 
-function retryNow(){
-  clearInterval(fetchTimer);
-  fetchAircraft();
-  fetchTimer = setInterval(fetchAircraft, REFRESH_MS);
+function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+
+function updateProgress(done,total,label){
+  const pct = total>0 ? (done/total*100) : 0;
+  document.getElementById('progressFill').style.width = pct+'%';
+  document.getElementById('progressCount').textContent = `${done}/${total}`;
+  document.getElementById('progressLabel').textContent = label ? `סורק: ${label}` : 'סורק...';
 }
 
-/* ══════════════════════════════════════════════
-   MAP INIT
-══════════════════════════════════════════════ */
-function initMap(lat, lng){
-  map = L.map('map',{center:[lat,lng],zoom:11,zoomControl:true,attributionControl:false});
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18}).addTo(map);
-  L.circle([lat,lng],{radius:RADIUS_KM*1000,color:'#00d4ff',weight:1,opacity:.3,fillColor:'#00d4ff',fillOpacity:.04}).addTo(map);
-  userMarker = L.marker([lat,lng],{icon:userIcon(),zIndexOffset:1000})
-    .addTo(map)
-    .bindPopup('<div class="popup-inner"><div class="popup-id">📍 מיקומך</div></div>');
-  userLatLng = {lat,lng};
-  $('overlay').style.display = 'none';
-  fetchAircraft();
-  fetchTimer = setInterval(fetchAircraft, REFRESH_MS);
+/* ============================= RENDER RESULTS ============================= */
+function renderResults(){
+  const container = document.getElementById('resultsContainer');
+  const empty = document.getElementById('emptyState');
+  document.getElementById('resultsCount').textContent = state.results.length ? `${state.results.length} התאמות` : '';
+  if(state.results.length===0){
+    container.innerHTML = '';
+    container.appendChild(empty);
+    return;
+  }
+  const capital = parseFloat(document.getElementById('capital').value);
+  const riskPct = parseFloat(document.getElementById('riskPct').value) || 1;
+
+  container.innerHTML = state.results.map(r=>{
+    const trendCls = r.trendClass==='up' ? 'trend-up' : 'trend-flat';
+    let sizeLine = '';
+    if(capital && capital>0 && r.riskPerShare>0){
+      const dollarsRisk = capital*(riskPct/100);
+      const shares = Math.floor(dollarsRisk / r.riskPerShare);
+      sizeLine = `<div class="stock-foot"><span>סיכון: $${dollarsRisk.toFixed(0)} (${riskPct}%)</span><span>כמות מוצעת: ${shares} מניות</span></div>`;
+    }
+    return `
+    <div class="stock-card ${trendCls}">
+      <div class="stock-top">
+        <div><span class="sym">${r.symbol}</span><span class="sym-idx">${r.src}</span></div>
+        <div class="price">$${r.lastClose.toFixed(2)}</div>
+      </div>
+      <div class="badges">
+        <span class="badge ${r.trendClass==='up'?'up':'flat'}">ממוצע ${r.trendLabel}</span>
+        <span class="badge near">${r.distPct>=0?'מעל':'מתחת'} ל-SMA ב-${Math.abs(r.distPct).toFixed(1)}%</span>
+        ${r.highVolume ? '<span class="badge vol">ווליום גבוה היום</span>' : ''}
+      </div>
+      <div class="stock-grid">
+        <div class="stat"><div class="stat-label">כניסה מוצעת</div><div class="stat-val">$${r.lastClose.toFixed(2)}</div></div>
+        <div class="stat"><div class="stat-label">סטופ-לוס (ATR)</div><div class="stat-val rose">$${r.stopLoss.toFixed(2)}</div></div>
+        <div class="stat"><div class="stat-label">סיכון לעסקה</div><div class="stat-val">${r.riskPct.toFixed(1)}%</div></div>
+      </div>
+      ${sizeLine}
+    </div>`;
+  }).join('');
+}
+function renderErrors(){
+  const el = document.getElementById('errList');
+  if(state.errors.length===0){ el.innerHTML=''; return; }
+  el.innerHTML = 'שגיאות (' + state.errors.length + '): ' + state.errors.slice(-5).join(' · ');
 }
 
-/* ══════════════════════════════════════════════
-   GPS
-══════════════════════════════════════════════ */
-navigator.geolocation
-  ? navigator.geolocation.watchPosition(
-      pos => {
-        const {latitude:lat,longitude:lng} = pos.coords;
-        if (!map) initMap(lat,lng);
-        else { userLatLng={lat,lng}; userMarker.setLatLng([lat,lng]); }
-      },
-      err => {
-        const m={1:'לא אושרה גישה למיקום',2:'המיקום אינו זמין',3:'תם זמן GPS'};
-        $('ovMsg').textContent = m[err.code]||'שגיאת GPS';
-      },
-      {enableHighAccuracy:true,maximumAge:5000,timeout:15000}
-    )
-  : ($('ovMsg').textContent = 'הדפדפן אינו תומך ב-GPS');
+document.getElementById('capital').addEventListener('input', renderResults);
+document.getElementById('riskPct').addEventListener('input', renderResults);
+
+init();
 </script>
 </body>
 </html>
