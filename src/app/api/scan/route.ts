@@ -3,6 +3,8 @@ import { prisma } from "@/lib/db";
 import { DEFAULT_CONFIG, dbConfigToMichuConfig } from "@/lib/config-defaults";
 import { evaluateStock } from "@/lib/trading-engine";
 
+
+export const dynamic = "force-dynamic";
 interface ScanFilters {
   indices: ("SP500" | "NASDAQ100")[]; // מדדים לסריקה
   maxDistancePct?: number; // מרחק מקסימלי מ-MA150
@@ -109,6 +111,7 @@ export async function POST(req: Request) {
     }
 
     results.push({
+      ticker,
       companyName: constituentInfo?.companyName ?? null,
       index: constituentInfo?.indexName,
       ...evalResult,

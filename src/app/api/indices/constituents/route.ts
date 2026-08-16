@@ -5,6 +5,8 @@ import {
   fetchNasdaq100Constituents,
 } from "@/lib/market-data-provider";
 
+
+export const dynamic = "force-dynamic";
 /** מסנכרן ומחזיר את רשימת מרכיבי המדדים. מקור: API אמיתי בלבד. */
 export async function GET() {
   if (!process.env.MARKET_DATA_API_KEY) {

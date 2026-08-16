@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 
+
+export const dynamic = "force-dynamic";
 export async function GET() {
   const dbConfig = await prisma.config.findUnique({ where: { id: 1 } });
   const portfolioValue = dbConfig?.portfolioValue ?? 100000;

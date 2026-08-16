@@ -13,6 +13,8 @@ import {
 } from "@/lib/market-data-provider";
 import { evaluateStock, calcTrailingStop } from "@/lib/trading-engine";
 
+
+export const dynamic = "force-dynamic";
 interface BacktestRequest {
   ticker: string;
   startDate: string;

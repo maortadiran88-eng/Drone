@@ -12,6 +12,8 @@ import {
 } from "@/lib/market-data-provider";
 import { evaluateStock, calcTrailingStop } from "@/lib/trading-engine";
 
+
+export const dynamic = "force-dynamic";
 /**
  * רענון נתוני שוק:
  * 1. עובר על כל הטיקרים שרלוונטיים (Positions + Watchlist/IndexConstituents שנצפו)

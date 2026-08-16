@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { DEFAULT_CONFIG } from "@/lib/config-defaults";
 
+
+export const dynamic = "force-dynamic";
 export async function GET() {
   let config = await prisma.config.findUnique({ where: { id: 1 } });
   if (!config) {

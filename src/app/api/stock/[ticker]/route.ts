@@ -3,6 +3,8 @@ import { prisma } from "@/lib/db";
 import { DEFAULT_CONFIG, dbConfigToMichuConfig } from "@/lib/config-defaults";
 import { evaluateStock } from "@/lib/trading-engine";
 
+
+export const dynamic = "force-dynamic";
 export async function GET(
   _req: Request,
   { params }: { params: { ticker: string } }
