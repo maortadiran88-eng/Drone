@@ -111,7 +111,6 @@ export async function POST(req: Request) {
     }
 
     results.push({
-      ticker,
       companyName: constituentInfo?.companyName ?? null,
       index: constituentInfo?.indexName,
       ...evalResult,
