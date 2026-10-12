@@ -15,6 +15,7 @@ function App() {
   const [imgModal,       setImgModal]       = useState({imgs:[],idx:0});
   const [imgZoom,        setImgZoom]        = useState(1);
   const [cart,           setCart]           = useState([]);
+  const music = useMusic();
   const [showCart,       setShowCart]       = useState(false);
   const [showNotif,      setShowNotif]      = useState(false);
   const [showMakatReview,setShowMakatReview]= useState(false);
@@ -486,6 +487,7 @@ function App() {
                 <button className="menu-item" onClick={()=>{setShowHelp(true);setMenuOpen(false);}}><span className="ic"><Ic n="help" s={17}/></span>מדריך שימוש</button>
                 {editor&&<button className="menu-item" onClick={()=>{openNotif();setMenuOpen(false);}}><span className="ic"><Ic n="bell" s={17}/></span>התראות{notifCount>0&&<span className="tc-meta" style={{marginRight:'auto'}}>({notifCount})</span>}</button>}
                 <button className="menu-item" onClick={()=>{toggleDark();}}><span className="ic"><Ic n={dark?'sun':'moon'} s={17}/></span>{dark?'מצב בהיר':'מצב כהה'}</button>
+                <button className="menu-item" onClick={()=>{TcMusic.toggle();}}><span className="ic"><Ic n={music.enabled?'volume':'volumeoff'} s={17}/></span>{music.enabled?'השתק מוזיקת רקע':'הפעל מוזיקת רקע'}</button>
 
                 {editor&&<div className="menu-divider"/>}
                 {admin&&<button className="menu-item" onClick={()=>{setShowMakatReview(true);setMenuOpen(false);}}><span className="ic"><Ic n="checkc" s={17}/></span>בדיקת מק"טים</button>}

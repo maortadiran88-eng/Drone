@@ -58,6 +58,8 @@ const IC_PATHS = {
   chevd:    '<path d="M6 9l6 6 6-6"/>',
   chevu:    '<path d="M6 15l6-6 6 6"/>',
   hourglass:'<path d="M7 4h10M7 20h10M8 4c0 5 8 5 8 8s-8 3-8 8M16 4c0 5-8 5-8 8"/>',
+  volume:   '<path d="M4 10v4h3.5l4.5 3.5v-11L7.5 10zM15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/>',
+  volumeoff:'<path d="M4 10v4h3.5l4.5 3.5v-11L7.5 10zM16 9.5l4.5 5M20.5 9.5L16 14.5"/>',
   clipboard:'<rect x="6" y="5" width="12" height="15" rx="2"/><path d="M9.5 5V4h5v1M9 11h6M9 14.5h6"/>',
 };
 function Ic({n,s=17,sw=1.7,fill,style,className}){

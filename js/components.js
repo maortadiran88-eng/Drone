@@ -17,6 +17,7 @@ function LoginScreen({data,onLogin}){
   return(
     <div className="login-bg" style={{position:'fixed',inset:0,overflow:'hidden',display:'flex',alignItems:'center',justifyContent:'center',padding:20,direction:'rtl'}}>
       <AirParticles/>
+      <div style={{position:'absolute',top:16,left:16,zIndex:3}}><MusicToggle/></div>
       <div style={{opacity:exiting?0:1,transform:exiting?'scale(1.04)':'scale(1)',transition:'opacity .45s ease, transform .45s ease',width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center',position:'relative'}}>
         {/* Blurred color blobs behind the glass card */}
         <div aria-hidden className="login-blob-a" style={{position:'absolute',width:280,height:280,borderRadius:'50%',filter:'blur(70px)',opacity:.5,top:-70,right:-60}}/>
@@ -635,30 +636,65 @@ function NotificationsPanel({missingAlerts,reports,techRequests,alerts,data,onNa
 }
 
 
-// ══════════ PHONE MOCK — decorative 3D phone on the login screen ══════════
+// ══════════ PHONE MOCK — decorative 3D phone on the login screen; follows the cursor ══════════
 function PhoneMock(){
-  const ref=useRef(null);
-  const move=e=>{
-    const el=ref.current;if(!el)return;
-    const r=el.getBoundingClientRect();
-    const x=(e.clientX-(r.left+r.width/2))/r.width, y=(e.clientY-(r.top+r.height/2))/r.height;
-    el.style.transform=`rotateY(${-18+x*14}deg) rotateX(${5-y*10}deg)`;
-  };
-  const leave=()=>{if(ref.current)ref.current.style.transform='';};
-  const rows=[['מנוע מאוורר','Fan Motor','TD-1001','0s',false],['לוח אלקטרוני','Control Board','TD-1002','.25s',true],['חיישן טמפרטורה','Temperature Sensor','TD-1003','.5s',false]];
+  const dev=useRef(null);
+  useEffect(()=>{
+    const el=dev.current;if(!el)return;
+    const REST={y:-10,x:4};
+    const reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let ty=REST.y,tx=REST.x,cy=ty,cx=tx,raf=0;
+    const apply=()=>{
+      el.style.transform=`rotateY(${cy.toFixed(2)}deg) rotateX(${cx.toFixed(2)}deg)`;
+      el.style.setProperty('--gx',(50-cy*1.1)+'%');
+      el.style.setProperty('--gy',(30+cx*2.2)+'%');
+    };
+    const loop=()=>{
+      cy+=(ty-cy)*.085;cx+=(tx-cx)*.085;apply();
+      if(Math.abs(ty-cy)>.02||Math.abs(tx-cx)>.02)raf=requestAnimationFrame(loop);else raf=0;
+    };
+    const wake=()=>{if(!raf)raf=requestAnimationFrame(loop);};
+    const onMove=e=>{
+      const r=el.getBoundingClientRect();
+      const nx=Math.max(-1,Math.min(1,(e.clientX-(r.left+r.width/2))/(window.innerWidth*.45)));
+      const ny=Math.max(-1,Math.min(1,(e.clientY-(r.top+r.height/2))/(window.innerHeight*.45)));
+      ty=-10-nx*30;      // turn toward the cursor
+      tx=4+ny*20;        // tilt toward the cursor
+      wake();
+    };
+    const onLeave=()=>{ty=REST.y;tx=REST.x;wake();};
+    apply();
+    if(reduce)return;
+    window.addEventListener('pointermove',onMove,{passive:true});
+    document.documentElement.addEventListener('mouseleave',onLeave);
+    return()=>{window.removeEventListener('pointermove',onMove);document.documentElement.removeEventListener('mouseleave',onLeave);if(raf)cancelAnimationFrame(raf);};
+  },[]);
+  const MODEL='GMV-160WL\\C-X';
+  const parts=[
+    ['כרטיס מדחס ZQ3316D','30223000038','52001014143','0s',true],
+    ['חיישן','322101002','52001009460','.25s',false],
+    ['מנוע מאוורר','1570410001301','52001014088','.5s',false]
+  ];
   return(
-    <div className="pm-wrap" aria-hidden="true" onMouseMove={move} onMouseLeave={leave}>
+    <div className="pm-wrap" aria-hidden="true">
       <div className="pm-halo"/>
       <div className="pm-float" style={{transformStyle:'preserve-3d'}}>
-        <div className="pm-dev" ref={ref}>
-          <div className="pm-chip" style={{left:-120,top:130,'--cz':'90px'}}><span>מק"ט תדיראן</span><b>TD-1002</b></div>
-          <div className="pm-chip" style={{right:-120,top:300,'--cz':'120px'}}><span>מק"ט יצרן</span><b>CB340012</b></div>
+        <div className="pm-dev" ref={dev}>
+          <div className="pm-chip" style={{left:-128,top:140,'--cz':'90px'}}><span>מק"ט תדיראן</span><b>52001014143</b></div>
+          <div className="pm-chip" style={{right:-132,top:310,'--cz':'120px'}}><span>מק"ט יצרן</span><b>1570410001301</b></div>
           <div className="pm-body"><div className="pm-screen">
             <div className="pm-top"><span className="pm-mark"><Ic n="mark" s={16} sw={1.8}/></span>חלקי חילוף</div>
-            <div className="pm-search"><span style={{color:'#8a99b5',display:'flex'}}><Ic n="search" s={17}/></span><span className="pm-q">GWH12ACC</span></div>
+            <div className="pm-search"><span style={{color:'#8a99b5',display:'flex'}}><Ic n="search" s={17}/></span><span className="pm-q">{MODEL}</span></div>
+            <div className="pm-model"><b>{MODEL}</b><span>3 חלקים</span></div>
             <div style={{display:'flex',flexDirection:'column',gap:8}}>
-              {rows.map(([n,e,c,d,sel])=>(
-                <div key={c} className={'pm-row'+(sel?' sel':'')} style={{'--pd':d}}><span className="pm-n">{n}</span><span className="pm-e">{e}</span><b className="pm-c">{c}</b></div>
+              {parts.map(([n,mfg,tad,d,sel])=>(
+                <div key={tad} className={'pm-row'+(sel?' sel':'')} style={{'--pd':d}}>
+                  <span className="pm-n">{n}</span>
+                  <div className="pm-nums">
+                    <div><i>מק"ט יצרן</i><b className="pm-c">{mfg}</b></div>
+                    <div><i>מק"ט תדיראן</i><b className="pm-c">{tad}</b></div>
+                  </div>
+                </div>
               ))}
             </div>
             <div className="pm-sent"><Ic n="checkc" s={18} sw={1.9}/><span>נשלח</span></div>

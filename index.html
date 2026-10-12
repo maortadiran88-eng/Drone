@@ -445,29 +445,48 @@ table{border-collapse:separate;border-spacing:0}
 .pm-halo{position:absolute;width:560px;height:560px;border-radius:50%;background:radial-gradient(circle,rgba(15,184,207,.22),transparent 66%);pointer-events:none}
 .dark .pm-halo{background:radial-gradient(circle,rgba(59,217,234,.26),transparent 66%)}
 .pm-float{animation:floatY 6s ease-in-out infinite}
-.pm-dev{--pm-line:rgba(148,170,210,.22);position:relative;width:290px;height:600px;transform-style:preserve-3d;transform:rotateY(-18deg) rotateX(5deg);transition:transform .5s var(--ease)}
+.pm-dev{--pm-line:rgba(148,170,210,.22);position:relative;width:290px;height:600px;transform-style:preserve-3d;transform:rotateY(-10deg) rotateX(4deg);will-change:transform}
 .pm-dev::before{content:"";position:absolute;inset:0;border-radius:46px;background:#1b2744;transform:translateZ(-10px)}
 .pm-body{position:absolute;inset:0;border-radius:46px;background:#0a1222;box-shadow:0 0 0 2px #2a3858,0 50px 90px -26px rgba(5,12,30,.75),inset 0 0 0 1px rgba(255,255,255,.07)}
 .pm-screen{position:absolute;inset:12px;border-radius:36px;overflow:hidden;background:#070d1b;padding:18px 15px;display:flex;flex-direction:column;gap:13px;color:#e6ecf7;direction:rtl}
 .pm-top{display:flex;align-items:center;gap:9px;font-size:14.5px;font-weight:600}
 .pm-mark{width:28px;height:28px;border-radius:9px;display:grid;place-items:center;background:rgba(59,217,234,.12);color:#3bd9ea;box-shadow:inset 0 0 0 1px rgba(59,217,234,.4)}
 .pm-search{display:flex;align-items:center;gap:9px;height:46px;padding:0 13px;border-radius:14px;background:#0e1730;box-shadow:inset 0 0 0 1px rgba(59,217,234,.5);font-size:14.5px}
-.pm-q{font-family:'IBM Plex Mono',ui-monospace,monospace;direction:ltr;animation:pmType 9s steps(8,end) infinite}
-.pm-row{display:grid;grid-template-columns:1fr auto;gap:1px 10px;padding:11px 13px;border-radius:14px;background:#0c1426;box-shadow:inset 0 0 0 1px var(--pm-line);animation:pmRow 9s var(--ease) infinite backwards}
+.pm-q{font-family:'IBM Plex Mono',ui-monospace,monospace;direction:ltr;animation:pmType 9s steps(13,end) infinite}
+.pm-row{display:flex;flex-direction:column;gap:7px;padding:11px 13px;border-radius:14px;background:#0c1426;box-shadow:inset 0 0 0 1px var(--pm-line);animation:pmRow 9s var(--ease) infinite backwards}
 .pm-row{animation-delay:var(--pd,0s)}
 .pm-row.sel{animation:pmRow 9s var(--ease) infinite backwards,pmSel 9s linear infinite;animation-delay:var(--pd,0s),0s}
-.pm-n{font-weight:600;font-size:14px}
-.pm-e{grid-column:1;font-size:11.5px;color:#8a99b5;direction:ltr;text-align:right}
-.pm-c{grid-row:1/span 2;grid-column:2;align-self:center;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:12px;color:#3bd9ea;direction:ltr}
+.pm-n{font-weight:600;font-size:14px;line-height:1.3}
+.pm-model{display:flex;align-items:baseline;justify-content:space-between;gap:8px;padding:0 2px}
+.pm-model b{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:13px;font-weight:500;color:#e6ecf7;direction:ltr}
+.pm-model span{font-size:11.5px;color:#8a99b5}
+.pm-nums{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.pm-nums i{display:block;font-style:normal;font-size:10.5px;color:#8a99b5;margin-bottom:1px}
+.pm-c{display:block;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11.5px;color:#3bd9ea;direction:ltr;text-align:right;font-weight:500;letter-spacing:-.2px}
 .pm-sheet{position:absolute;inset-inline:0;bottom:0;padding:16px 15px 20px;border-radius:26px 26px 0 0;background:#111b33;box-shadow:0 -20px 40px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.08);display:flex;flex-direction:column;gap:9px;transform:translateY(105%);animation:pmSheet 9s var(--ease) infinite}
 .pm-sheet .t{font-size:13px;color:#b2bfd6}
 .pm-btn{display:flex;align-items:center;justify-content:center;gap:8px;height:44px;border-radius:12px;font-weight:600;font-size:14px;box-shadow:inset 0 0 0 1px rgba(148,170,210,.22)}
 .pm-btn.wa{background:#3bd9ea;color:#04141a;box-shadow:none}
 .pm-sent{position:absolute;top:78px;inset-inline:15px;display:flex;align-items:center;justify-content:center;gap:8px;height:42px;border-radius:12px;background:rgba(74,222,128,.14);color:#6ee7a0;font-weight:600;font-size:14px;opacity:0;animation:pmSent 9s var(--ease) infinite}
+.pm-body::after{content:"";position:absolute;inset:0;border-radius:46px;pointer-events:none;background:radial-gradient(circle at var(--gx,30%) var(--gy,18%),rgba(255,255,255,.14),transparent 46%)}
 .pm-chip{position:absolute;display:flex;flex-direction:column;gap:1px;padding:11px 15px;border-radius:15px;background:rgba(14,23,48,.88);backdrop-filter:blur(10px);box-shadow:inset 0 0 0 1px rgba(148,170,210,.28),0 24px 40px -16px rgba(0,0,0,.6);transform:translateZ(var(--cz));color:#e6ecf7}
 .pm-chip span{font-size:11.5px;color:#8a99b5}
 .pm-chip b{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:14px;font-weight:500;color:#3bd9ea}
 @media (min-width:980px){.pm-wrap{display:flex}}
+
+
+/* ─── Music toggle ─── */
+@keyframes eq{0%,100%{transform:scaleY(.25)}50%{transform:scaleY(1)}}
+.music-btn{display:inline-flex;align-items:center;gap:8px;height:42px;padding:0 13px;border-radius:999px;border:1px solid var(--border2);background:var(--glass-bg);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);color:var(--text);cursor:pointer;transition:transform .14s var(--ease),border-color .15s ease,color .15s ease}
+.music-btn:active{transform:scale(.95)}
+.music-btn[aria-pressed="true"]{color:var(--cyan)}
+.eq{display:flex;align-items:flex-end;gap:2px;height:14px}
+.eq i{display:block;width:2.5px;height:100%;border-radius:2px;background:currentColor;transform-origin:50% 100%;transform:scaleY(.25)}
+.eq.on i{animation:eq 1.1s ease-in-out infinite}
+.eq.on i:nth-child(2){animation-delay:-.4s}
+.eq.on i:nth-child(3){animation-delay:-.8s}
+@media (hover:hover) and (pointer:fine){.music-btn:hover{border-color:var(--cyan)}}
+@media (prefers-reduced-motion:reduce){.eq.on i{animation:none;transform:scaleY(.6)}}
 
 /* ─── Reduced motion ─── */
 @media (prefers-reduced-motion:reduce){
@@ -502,15 +521,16 @@ table{border-collapse:separate;border-spacing:0}
   });
 </script>
 
-<script type="text/babel" data-presets="my-react-env" src="js/icons.js?v=2026101201"></script>
-<script type="text/babel" data-presets="my-react-env" src="js/constants.js?v=2026101201"></script>
-<script type="text/babel" data-presets="my-react-env" src="js/firebase.js?v=2026101201"></script>
-<script type="text/babel" data-presets="my-react-env" src="js/helpers.js?v=2026101201"></script>
-<script type="text/babel" data-presets="my-react-env" src="js/components.js?v=2026101201"></script>
-<script type="text/babel" data-presets="my-react-env" src="js/modals.js?v=2026101201"></script>
-<script type="text/babel" data-presets="my-react-env" src="js/ModelView.js?v=2026101201"></script>
-<script type="text/babel" data-presets="my-react-env" src="js/compare.js?v=2026101201"></script>
-<script type="text/babel" data-presets="my-react-env" src="js/makat_review.js?v=2026101201"></script>
-<script type="text/babel" data-presets="my-react-env" src="js/App.js?v=2026101201"></script>
+<script type="text/babel" data-presets="my-react-env" src="js/icons.js?v=2026101202"></script>
+<script type="text/babel" data-presets="my-react-env" src="js/constants.js?v=2026101202"></script>
+<script type="text/babel" data-presets="my-react-env" src="js/music.js?v=2026101202"></script>
+<script type="text/babel" data-presets="my-react-env" src="js/firebase.js?v=2026101202"></script>
+<script type="text/babel" data-presets="my-react-env" src="js/helpers.js?v=2026101202"></script>
+<script type="text/babel" data-presets="my-react-env" src="js/components.js?v=2026101202"></script>
+<script type="text/babel" data-presets="my-react-env" src="js/modals.js?v=2026101202"></script>
+<script type="text/babel" data-presets="my-react-env" src="js/ModelView.js?v=2026101202"></script>
+<script type="text/babel" data-presets="my-react-env" src="js/compare.js?v=2026101202"></script>
+<script type="text/babel" data-presets="my-react-env" src="js/makat_review.js?v=2026101202"></script>
+<script type="text/babel" data-presets="my-react-env" src="js/App.js?v=2026101202"></script>
 </body>
 </html>
