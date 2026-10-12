@@ -262,25 +262,25 @@ function ModelView({brand,cat,model,editor,admin,viewer,hq,data,favorites,onTogg
         <div className="toolbar-panel" style={{marginTop:12}}>
           <div className="tool-group">
             {onOpenCompare&&<button onClick={onOpenCompare} className="tool-btn tt" data-tt="פתח את חלון השוואת הדגמים">
-              <span className="ic"><Ic n="compare" s={17}/></span><span className="lbl">השוואה</span>{compareCount>0&&<span className="cnt">{compareCount}</span>}
+              <span className="ic ic-compare"><Ic n="compare" s={17}/></span><span className="lbl">השוואה</span>{compareCount>0&&<span className="cnt">{compareCount}</span>}
             </button>}
             {onOpenCart&&<button onClick={onOpenCart} className="tool-btn tt" data-tt="פתח את סל החלקים">
-              <span className="ic"><Ic n="cart" s={17}/></span><span className="lbl">סל חלקים</span>{cartCount>0&&<span className="cnt">{cartCount}</span>}
+              <span className="ic ic-cart"><Ic n="cart" s={17}/></span><span className="lbl">סל חלקים</span>{cartCount>0&&<span className="cnt">{cartCount}</span>}
             </button>}
             <button onClick={exportModelXLS} className="tool-btn tt" data-tt="הורד קובץ Excel עם רשימת החלקים">
-              <span className="ic"><Ic n="sheet" s={17}/></span><span className="lbl">ייצוא Excel</span>
+              <span className="ic ic-sheet"><Ic n="sheet" s={17}/></span><span className="lbl">ייצוא Excel</span>
             </button>
             <button onClick={exportPDF} className="tool-btn tt" data-tt="הורד קובץ PDF עם רשימת החלקים">
-              <span className="ic"><Ic n="file" s={17}/></span><span className="lbl">ייצוא PDF</span>
+              <span className="ic ic-file"><Ic n="file" s={17}/></span><span className="lbl">ייצוא PDF</span>
             </button>
             <button onClick={shareLink} className="tool-btn tt" data-tt="העתק קישור לשיתוף הדגם">
-              <span className="ic"><Ic n="share" s={17}/></span><span className="lbl">שיתוף</span>
+              <span className="ic ic-share"><Ic n="share" s={17}/></span><span className="lbl">שיתוף</span>
             </button>
             <button onClick={()=>setQuickMode(true)} className="tool-btn tt" data-tt="עבור לתצוגה נוחה לנייד">
-              <span className="ic"><Ic n="phone" s={17}/></span><span className="lbl">תצוגת נייד</span>
+              <span className="ic ic-phone"><Ic n="phone" s={17}/></span><span className="lbl">תצוגת נייד</span>
             </button>
             <button onClick={()=>setShowReport(true)} className="tool-btn warn tt" data-tt="דווח על טעות או אי-התאמה בדגם זה">
-              <span className="ic"><Ic n="warn" s={17}/></span><span className="lbl">דווח שגיאה</span>
+              <span className="ic ic-warn"><Ic n="warn" s={17}/></span><span className="lbl">דווח שגיאה</span>
             </button>
           </div>
 
@@ -288,27 +288,27 @@ function ModelView({brand,cat,model,editor,admin,viewer,hq,data,favorites,onTogg
             <div className="tool-group" style={{marginTop:8,paddingTop:8,borderTop:'1px solid var(--border)'}}>
               <span className="tool-group-label">ניהול</span>
               <button onClick={()=>setShowMove(true)} className="tool-btn tt" data-tt="העבר את הדגם למותג/קטגוריה אחרים">
-                <span className="ic"><Ic n="shuffle" s={17}/></span><span className="lbl">העבר</span>
+                <span className="ic ic-shuffle"><Ic n="shuffle" s={17}/></span><span className="lbl">העבר</span>
               </button>
               <button onClick={()=>{if(confirm('לשכפל?'))onDuplicate();}} className="tool-btn tt" data-tt="צור עותק זהה של הדגם">
-                <span className="ic"><Ic n="dup" s={17}/></span><span className="lbl">שכפל</span>
+                <span className="ic ic-dup"><Ic n="dup" s={17}/></span><span className="lbl">שכפל</span>
               </button>
               <button onClick={()=>setShowCopy(true)} className="tool-btn tt" data-tt="העתק חלקים מדגם אחר לתוך זה">
-                <span className="ic"><Ic n="clipboard" s={17}/></span><span className="lbl">העתק חלקים</span>
+                <span className="ic ic-clipboard"><Ic n="clipboard" s={17}/></span><span className="lbl">העתק חלקים</span>
               </button>
               <button onClick={()=>onUpdate({hidden:!model.hidden})}
                 className={'tool-btn tt'+(model.hidden?' active':'')}
                 data-tt={model.hidden?'הדגם מוסתר מצופים — לחץ כדי להציג':'הצג את הדגם לצופים'}>
-                <span className="ic"><Ic n={model.hidden?'eyeoff':'eye'} s={17}/></span><span className="lbl">{model.hidden?'מוסתר מצופים':'הסתר מצופים'}</span>
+                <span className="ic ic-eye"><Ic n={model.hidden?'eyeoff':'eye'} s={17}/></span><span className="lbl">{model.hidden?'מוסתר מצופים':'הסתר מצופים'}</span>
               </button>
               {admin && <>
                 <button onClick={()=>setReviewMode(true)} className="tool-btn tt" data-tt="עבור על כל החלקים ואשר את המק&quot;טים">
-                  <span className="ic"><Ic n="checkc" s={17}/></span><span className="lbl">בדיקת מק"טים</span>
+                  <span className="ic ic-checkc"><Ic n="checkc" s={17}/></span><span className="lbl">בדיקת מק"טים</span>
                 </button>
                 <button onClick={()=>setShowHiddenParts(v=>!v)}
                   className={'tool-btn tt'+(showHiddenParts?' active':'')}
                   data-tt={showHiddenParts?'הסתר חלקים מוסתרים':'הצג חלקים מוסתרים מלקוחות (תצוגת ניהול בלבד — לא משנה למי שהם מוסתרים)'}>
-                  <span className="ic"><Ic n={showHiddenParts?'eyeoff':'eye'} s={17}/></span><span className="lbl">{showHiddenParts?'מציג חלקים מוסתרים':'הצג חלקים מוסתרים'}</span>
+                  <span className="ic ic-eye"><Ic n={model.hidden?'eyeoff':'eye'} s={17}/></span><span className="lbl">{showHiddenParts?'מציג חלקים מוסתרים':'הצג חלקים מוסתרים'}</span>
                 </button>
                 {hiddenCount>0 && (
                   <span className="tc-meta" style={{padding:'0 4px'}}>

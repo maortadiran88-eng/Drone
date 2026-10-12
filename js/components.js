@@ -18,6 +18,7 @@ function LoginScreen({data,onLogin}){
     <div className="login-bg" style={{position:'fixed',inset:0,overflow:'hidden',display:'flex',alignItems:'center',justifyContent:'center',padding:20,direction:'rtl'}}>
       <AirParticles/>
       <div style={{position:'absolute',top:16,left:16,zIndex:3}}><MusicToggle/></div>
+      <LoginPlayer/>
       <div style={{opacity:exiting?0:1,transform:exiting?'scale(1.04)':'scale(1)',transition:'opacity .45s ease, transform .45s ease',width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center',position:'relative'}}>
         {/* Blurred color blobs behind the glass card */}
         <div aria-hidden className="login-blob-a" style={{position:'absolute',width:280,height:280,borderRadius:'50%',filter:'blur(70px)',opacity:.5,top:-70,right:-60}}/>
@@ -161,10 +162,11 @@ function HomeScreen({data,onNav,recent,favorites,onToggleFav,loginRole,reports,t
       {/* ── HERO ── */}
       <div style={{position:'relative',textAlign:'center',padding:'34px 12px 30px'}}>
         <div style={{position:'relative',zIndex:1}}>
-          <div className="hero-title rise-in" style={{marginBottom:10,'--d':0}}>קטלוג חלקי חילוף VRF</div>
-          <div className="tc-body rise-in" style={{marginBottom:26,color:'var(--sub)',fontSize:16,'--d':1}}>חיפוש חלקי חילוף לפי מק"ט, דגם או שם חלק</div>
+          {greeting&&<div className="hero-greet rise-in" style={{'--d':0}}>{greeting}</div>}
+          <div className="hero-title rise-in" style={{marginBottom:10,'--d':1}}>קטלוג חלקי חילוף VRF</div>
+          <div className="tc-body rise-in" style={{marginBottom:26,color:'var(--sub)',fontSize:16,'--d':2}}>חיפוש חלקי חילוף לפי מק"ט, דגם או שם חלק</div>
 
-          <div className="hero-search-wrap rise-in" style={{'--d':2}}>
+          <div className="hero-search-wrap rise-in" style={{'--d':3}}>
             <span className="hs-ic"><Ic n="search" s={21}/></span>
             <input value={query} onChange={e=>setQuery(e.target.value)}
               placeholder="חיפוש לפי מק&quot;ט, דגם או שם חלק..."
@@ -173,7 +175,6 @@ function HomeScreen({data,onNav,recent,favorites,onToggleFav,loginRole,reports,t
             {query&&<SearchResultsPanel results={results} query={query} onClose={()=>setQuery('')} onSelect={r=>onNav(r.b.id,r.c.id,r.m.id,query)}/>}
           </div>
 
-          <div className="rise-in" style={{marginTop:20,fontSize:13.5,color:'var(--sub)','--d':3}}>{greeting}</div>
         </div>
       </div>
 
@@ -248,12 +249,19 @@ function HomeScreen({data,onNav,recent,favorites,onToggleFav,loginRole,reports,t
 }
 
 // ══════════ SIDEBAR BRAND ══════════
-function SidebarBrand({brand,sel,editor,admin,canSeeHidden,favorites,onToggleFav,onNav,onAddModel,onDelModel,onAddCat,onEditCat,onDelCat,onAddSubCat,onEditSubCat,onDelSubCat,sidebarFilter,compareList,onToggleCompare}){
+function SidebarBrand({openReq,brand,sel,editor,admin,canSeeHidden,favorites,onToggleFav,onNav,onAddModel,onDelModel,onAddCat,onEditCat,onDelCat,onAddSubCat,onEditSubCat,onDelSubCat,sidebarFilter,compareList,onToggleCompare}){
   const[open,setOpen]=useState(false);const[openCats,setOpenCats]=useState({});const[openSubs,setOpenSubs]=useState({});
   const[addingMod,setAddingMod]=useState(null);const[newModName,setNewModName]=useState('');
   const[editCat,setEditCat]=useState(null);const[addingCat,setAddingCat]=useState(false);const[newCatName,setNewCatName]=useState('');
   const[addingSub,setAddingSub]=useState(null);const[newSubName,setNewSubName]=useState('');const[editSub,setEditSub]=useState(null);
-  const modRef=useRef();
+  const modRef=useRef();const wrapRef=useRef(null);
+  // picking a brand tile on the home screen opens that brand here (and folds the others)
+  useEffect(()=>{
+    if(!openReq)return;
+    const mine=openReq.id===brand.id;
+    setOpen(mine);
+    if(mine)setTimeout(()=>{if(wrapRef.current)wrapRef.current.scrollIntoView({behavior:'smooth',block:'nearest'});},340);
+  },[openReq]);
 
   useEffect(()=>{if(sel?.bid===brand.id){setOpen(true);setOpenCats(p=>({...p,[sel.cid]:true}));if(sel.scid)setOpenSubs(p=>({...p,[sel.scid]:true}));}},[sel?.bid,sel?.cid,sel?.scid]);
   useEffect(()=>{
@@ -333,7 +341,7 @@ function SidebarBrand({brand,sel,editor,admin,canSeeHidden,favorites,onToggleFav
   };
 
   return(
-    <div className="sb-brand" style={{borderBottom:'1px solid var(--border)'}}>
+    <div className="sb-brand" ref={wrapRef} style={{borderBottom:'1px solid var(--border)'}}>
       <div className="sb-head" onClick={()=>setOpen(v=>!v)} style={{padding:'11px 14px',background:brand.color,color:'#fff',display:'flex',alignItems:'center',cursor:'pointer',userSelect:'none',gap:6}}>
         <span style={{flex:1,fontWeight:'bold',fontSize:14}}>{brand.name}</span>
         {brand.hidden && <span title="מותג מוסתר מצופים" style={{fontSize:11,opacity:.9}}>🙈</span>}
@@ -646,8 +654,8 @@ function PhoneMock(){
     let ty=REST.y,tx=REST.x,cy=ty,cx=tx,raf=0;
     const apply=()=>{
       el.style.transform=`rotateY(${cy.toFixed(2)}deg) rotateX(${cx.toFixed(2)}deg)`;
-      el.style.setProperty('--gx',(50-cy*1.1)+'%');
-      el.style.setProperty('--gy',(30+cx*2.2)+'%');
+      el.style.setProperty('--gx',(50+cy*1.1)+'%');
+      el.style.setProperty('--gy',(30-cx*2.2)+'%');
     };
     const loop=()=>{
       cy+=(ty-cy)*.085;cx+=(tx-cx)*.085;apply();
@@ -658,8 +666,8 @@ function PhoneMock(){
       const r=el.getBoundingClientRect();
       const nx=Math.max(-1,Math.min(1,(e.clientX-(r.left+r.width/2))/(window.innerWidth*.45)));
       const ny=Math.max(-1,Math.min(1,(e.clientY-(r.top+r.height/2))/(window.innerHeight*.45)));
-      ty=-10-nx*30;      // turn toward the cursor
-      tx=4+ny*20;        // tilt toward the cursor
+      ty=nx*32;          // turn toward the cursor
+      tx=-ny*22;         // tilt toward the cursor
       wake();
     };
     const onLeave=()=>{ty=REST.y;tx=REST.x;wake();};

@@ -488,6 +488,36 @@ table{border-collapse:separate;border-spacing:0}
 @media (hover:hover) and (pointer:fine){.music-btn:hover{border-color:var(--cyan)}}
 @media (prefers-reduced-motion:reduce){.eq.on i{animation:none;transform:scaleY(.6)}}
 
+
+/* ─── Home greeting (above the title) ─── */
+.hero-greet{display:inline-flex;align-items:center;font-weight:600;font-size:15.5px;color:var(--primary);background:var(--primary-light);padding:7px 18px;border-radius:999px;margin-bottom:18px}
+
+/* ─── Toolbar: colourful icon chips ─── */
+.tool-btn{padding:0 8px 0 16px}
+.tool-btn .ic{width:28px;height:28px;border-radius:9px;color:var(--ic,var(--sub));background:color-mix(in srgb,var(--ic,var(--sub)) 14%,transparent)}
+.tool-btn.active .ic{background:rgba(255,255,255,.2);color:inherit}
+.ic-compare{--ic:#7c3aed}   .dark .ic-compare{--ic:#b79cff}
+.ic-cart{--ic:#ea7a0c}      .dark .ic-cart{--ic:#ffb257}
+.ic-sheet{--ic:#16a34a}     .dark .ic-sheet{--ic:#4ade80}
+.ic-file{--ic:#dc2626}      .dark .ic-file{--ic:#ff7b7b}
+.ic-share{--ic:#2563eb}     .dark .ic-share{--ic:#6aa6ff}
+.ic-phone{--ic:#0d9488}     .dark .ic-phone{--ic:#3ee0cf}
+.ic-warn{--ic:#d98a00}      .dark .ic-warn{--ic:#f7c04a}
+.ic-shuffle{--ic:#0284c7}   .dark .ic-shuffle{--ic:#5cc8ff}
+.ic-dup{--ic:#4f46e5}       .dark .ic-dup{--ic:#a5a8ff}
+.ic-clipboard{--ic:#0891b2} .dark .ic-clipboard{--ic:#4cd3ef}
+.ic-eye{--ic:#64748b}       .dark .ic-eye{--ic:#a3b1c6}
+.ic-checkc{--ic:#059669}    .dark .ic-checkc{--ic:#34d399}
+@media(max-width:640px){.tool-btn{padding:0 7px}}
+
+/* ─── Login · YouTube mini-player ─── */
+.yt-card{position:fixed;left:20px;bottom:20px;z-index:3;width:min(356px,calc(100vw - 40px));height:200px;border-radius:20px;overflow:hidden;background:#000;box-shadow:0 26px 50px -22px var(--shadow2),0 0 0 1px var(--border2);animation:slideUp .5s var(--ease) .3s both}
+.yt-card iframe{display:block;width:100%!important;height:200px!important;border:0}
+@media(max-width:700px){
+  .yt-card{left:50%;bottom:10px;transform:translateX(-50%);width:min(356px,calc(100vw - 24px));animation:none}
+  .login-bg{padding-bottom:220px!important;overflow-y:auto!important}
+}
+
 /* ─── Reduced motion ─── */
 @media (prefers-reduced-motion:reduce){
   .tc-table tbody tr.part-row,.rise-in,.reveal,.sb-body,.menu-panel{animation:none;opacity:1;transform:none;transition:none}
@@ -521,16 +551,16 @@ table{border-collapse:separate;border-spacing:0}
   });
 </script>
 
-<script type="text/babel" data-presets="my-react-env" src="js/icons.js?v=2026101202"></script>
-<script type="text/babel" data-presets="my-react-env" src="js/constants.js?v=2026101202"></script>
-<script type="text/babel" data-presets="my-react-env" src="js/music.js?v=2026101202"></script>
-<script type="text/babel" data-presets="my-react-env" src="js/firebase.js?v=2026101202"></script>
-<script type="text/babel" data-presets="my-react-env" src="js/helpers.js?v=2026101202"></script>
-<script type="text/babel" data-presets="my-react-env" src="js/components.js?v=2026101202"></script>
-<script type="text/babel" data-presets="my-react-env" src="js/modals.js?v=2026101202"></script>
-<script type="text/babel" data-presets="my-react-env" src="js/ModelView.js?v=2026101202"></script>
-<script type="text/babel" data-presets="my-react-env" src="js/compare.js?v=2026101202"></script>
-<script type="text/babel" data-presets="my-react-env" src="js/makat_review.js?v=2026101202"></script>
-<script type="text/babel" data-presets="my-react-env" src="js/App.js?v=2026101202"></script>
+<script type="text/babel" data-presets="my-react-env" src="js/icons.js?v=2026101203"></script>
+<script type="text/babel" data-presets="my-react-env" src="js/constants.js?v=2026101203"></script>
+<script type="text/babel" data-presets="my-react-env" src="js/music.js?v=2026101203"></script>
+<script type="text/babel" data-presets="my-react-env" src="js/firebase.js?v=2026101203"></script>
+<script type="text/babel" data-presets="my-react-env" src="js/helpers.js?v=2026101203"></script>
+<script type="text/babel" data-presets="my-react-env" src="js/components.js?v=2026101203"></script>
+<script type="text/babel" data-presets="my-react-env" src="js/modals.js?v=2026101203"></script>
+<script type="text/babel" data-presets="my-react-env" src="js/ModelView.js?v=2026101203"></script>
+<script type="text/babel" data-presets="my-react-env" src="js/compare.js?v=2026101203"></script>
+<script type="text/babel" data-presets="my-react-env" src="js/makat_review.js?v=2026101203"></script>
+<script type="text/babel" data-presets="my-react-env" src="js/App.js?v=2026101203"></script>
 </body>
 </html>

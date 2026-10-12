@@ -15,7 +15,7 @@ function App() {
   const [imgModal,       setImgModal]       = useState({imgs:[],idx:0});
   const [imgZoom,        setImgZoom]        = useState(1);
   const [cart,           setCart]           = useState([]);
-  const music = useMusic();
+  const [openBrandReq, setOpenBrandReq] = useState(null);
   const [showCart,       setShowCart]       = useState(false);
   const [showNotif,      setShowNotif]      = useState(false);
   const [showMakatReview,setShowMakatReview]= useState(false);
@@ -471,9 +471,11 @@ function App() {
 
           <div style={{flex:1}}/>
 
-          {sel&&(
-            <button onClick={()=>setSearchOpen(v=>!v)} className={'hdr-btn tt tt-hdr'+(searchOpen?' on':'')} data-tt="חיפוש"><Ic n="search" s={18}/></button>
-          )}
+          {sel&&(<>
+            <button onClick={goBack} className="hdr-btn tt tt-hdr" data-tt="חזרה אחורה" aria-label="חזרה אחורה"><Ic n="back" s={19}/></button>
+            <button onClick={goHome} className="hdr-btn tt tt-hdr" data-tt="מסך הבית" aria-label="מסך הבית"><Ic n="home" s={18}/></button>
+            <button onClick={()=>setSearchOpen(v=>!v)} className={'hdr-btn tt tt-hdr'+(searchOpen?' on':'')} data-tt="חיפוש" aria-label="חיפוש"><Ic n="search" s={18}/></button>
+          </>)}
 
           <div className="menu-wrap">
             <button onClick={()=>setMenuOpen(v=>!v)} className={'hdr-btn tt tt-hdr'+(menuOpen?' on':'')} data-tt="תפריט"><Ic n="dots" s={19}/></button>
@@ -487,7 +489,6 @@ function App() {
                 <button className="menu-item" onClick={()=>{setShowHelp(true);setMenuOpen(false);}}><span className="ic"><Ic n="help" s={17}/></span>מדריך שימוש</button>
                 {editor&&<button className="menu-item" onClick={()=>{openNotif();setMenuOpen(false);}}><span className="ic"><Ic n="bell" s={17}/></span>התראות{notifCount>0&&<span className="tc-meta" style={{marginRight:'auto'}}>({notifCount})</span>}</button>}
                 <button className="menu-item" onClick={()=>{toggleDark();}}><span className="ic"><Ic n={dark?'sun':'moon'} s={17}/></span>{dark?'מצב בהיר':'מצב כהה'}</button>
-                <button className="menu-item" onClick={()=>{TcMusic.toggle();}}><span className="ic"><Ic n={music.enabled?'volume':'volumeoff'} s={17}/></span>{music.enabled?'השתק מוזיקת רקע':'הפעל מוזיקת רקע'}</button>
 
                 {editor&&<div className="menu-divider"/>}
                 {admin&&<button className="menu-item" onClick={()=>{setShowMakatReview(true);setMenuOpen(false);}}><span className="ic"><Ic n="checkc" s={17}/></span>בדיקת מק"טים</button>}
@@ -582,7 +583,7 @@ function App() {
             </div>
             <div style={{flex:1,overflowY:'auto'}}>
               {data.brands.filter(b=>editor||!b.hidden).map(b=>(
-                <SidebarBrand key={b.id} brand={b} sel={sel} editor={editor} admin={admin} canSeeHidden={editor}
+                <SidebarBrand key={b.id} openReq={openBrandReq} brand={b} sel={sel} editor={editor} admin={admin} canSeeHidden={editor}
                   favorites={favorites} onToggleFav={toggleFav} onNav={nav}
                   sidebarFilter={sidebarFilter}
                   compareList={compareList}
@@ -639,7 +640,7 @@ function App() {
         <main style={{flex:1,overflowY:'auto',padding:14,paddingBottom:44}}>
           {!model
             ?<HomeScreen data={data} onNav={nav} recent={recent} favorites={favorites} onToggleFav={toggleFav} loginRole={loginRole} reports={reports} techRequests={techRequests} alerts={alerts}
-                onOpenSidebar={()=>setSidebar(true)} onOpenBrand={()=>setSidebar(true)}
+                onOpenSidebar={()=>setSidebar(true)} onOpenBrand={bid=>{setSidebar(true);setOpenBrandReq({id:bid,n:Date.now()});}}
                 query={query} setQuery={setQuery} results={results} canSeeHidden={editor}/>
             :<ModelView
                 key={model.id} brand={brand} cat={cat} model={model}
