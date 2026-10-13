@@ -24,6 +24,12 @@ function ModelView({brand,cat,model,editor,admin,viewer,hq,data,favorites,onTogg
   const [reviewMode,  setReviewMode]  = useState(false);
   const [pendingOnly, setPendingOnly] = useState(false);
   const [showHiddenParts, setShowHiddenParts] = useState(false);
+  const [tab, setTab] = useState('parts');
+  const [partsView, setPartsView] = useState(()=>{
+    try{const v=localStorage.getItem('ac_partsview');if(v==='list'||v==='cards')return v;}catch(e){}
+    return (viewer||(typeof window!=='undefined'&&window.innerWidth<720))?'cards':'list';
+  });
+  const changeView = v => { setPartsView(v); try{localStorage.setItem('ac_partsview',v);}catch(e){} };
   const firstHiRef = useRef(null);
   const q      = hq.trim().toLowerCase();
   const images = model.images || [];
@@ -204,7 +210,7 @@ function ModelView({brand,cat,model,editor,admin,viewer,hq,data,favorites,onTogg
           ))}
         </div>
         {selRows.size>0 && (
-          <div style={{position:'fixed',bottom:16,right:16,left:16,zIndex:100,background:'#25D366',borderRadius:16,padding:'14px 18px',display:'flex',alignItems:'center',gap:10,boxShadow:'0 6px 20px rgba(0,0,0,.3)'}}>
+          <div className="sel-bar" style={{position:'fixed',bottom:16,right:16,left:16,zIndex:100,background:'#25D366',borderRadius:16,padding:'14px 18px',display:'flex',alignItems:'center',gap:10,boxShadow:'0 6px 20px rgba(0,0,0,.3)'}}>
             <span style={{color:'#fff',fontWeight:700,flex:1}}>✓ {selRows.size} נבחרו</span>
             <button onClick={()=>setShowWaEditor(true)} style={{background:'#fff',border:'none',borderRadius:9,padding:'9px 18px',cursor:'pointer',fontWeight:700,color:'#25D366',fontSize:13.5}}>📱 שלח</button>
             <button onClick={clearRows} style={{background:'rgba(255,255,255,.25)',border:'none',borderRadius:9,padding:'9px 14px',cursor:'pointer',color:'#fff',fontSize:12.5}}>✕</button>
@@ -222,7 +228,7 @@ function ModelView({brand,cat,model,editor,admin,viewer,hq,data,favorites,onTogg
     <div className="tc-container" style={{maxWidth:1100}}>
 
       {/* Header card */}
-      <div className="card-md" style={{padding:'16px 18px',marginBottom:12}}>
+      <div className="card-md mv-hero" style={{'--bc':brand.color,padding:'20px 22px',marginBottom:14}}>
         <div style={{display:'flex',alignItems:'center',gap:10,flexWrap:'wrap',marginBottom:8}}>
           <span className="badge" style={{background:brand.color,color:'#fff'}}>{brand.name}</span>
           <span className="tc-meta">{cat.name}</span>
@@ -335,8 +341,18 @@ function ModelView({brand,cat,model,editor,admin,viewer,hq,data,favorites,onTogg
         </div>
       )}
 
-      {/* Images / Drawings — enlarged, clearer preview */}
+      {/* Tabs: parts / drawings */}
       {(editor||images.length>0) && (
+        <div className="mv-tabs">
+          <Segmented value={tab} onChange={setTab} options={[
+            {v:'parts',label:'חלקים',icon:'clipboard',count:partsBase.length},
+            {v:'drawings',label:'שרטוטים',icon:'ruler',count:images.length}
+          ]}/>
+        </div>
+      )}
+
+      {/* Images / Drawings — gallery with 3D hover + full-screen viewer */}
+      {tab==='drawings' && (editor||images.length>0) && (
         <div className="card-md" style={{padding:'14px 16px',marginBottom:12}}>
           <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:12,flexWrap:'wrap'}}>
             <span className="tc-sub-title"><Ic n="ruler" s={16} style={{display:'inline-block',verticalAlign:'-3px',marginLeft:6}}/>שרטוטים</span>
@@ -357,13 +373,13 @@ function ModelView({brand,cat,model,editor,admin,viewer,hq,data,favorites,onTogg
             </div>
           )}
           {images.length>0
-            ? <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(200px,1fr))',gap:10}}>
+            ? <div className="dg">
                 {images.map((img,idx) => (
-                  <div key={idx} style={{borderRadius:11,overflow:'hidden',border:'1px solid var(--border)',background:'var(--card2)'}}>
-                    <img src={img} alt={`שרטוט ${idx+1}`} onClick={()=>onOpenImg(images,idx)} style={{width:'100%',height:170,objectFit:'contain',cursor:'zoom-in',display:'block',background:'var(--card2)'}}/>
-                    <div style={{padding:'5px 10px',display:'flex',alignItems:'center',justifyContent:'space-between',background:'var(--card2)',borderTop:'1px solid var(--border)'}}>
-                      <span className="tc-meta">תמונה {idx+1} · לחץ להגדלה</span>
-                      {editor && <button onClick={()=>{if(confirm('למחוק?'))onDelImg(idx);}} style={{background:'none',border:'none',color:'var(--red)',cursor:'pointer',fontSize:13}}>🗑</button>}
+                  <div key={idx} className="dg-card" style={{'--i':idx}} onClick={()=>onOpenImg(images,idx)}>
+                    <img className="dg-img" src={img} alt={`שרטוט ${idx+1}`} loading="lazy"/>
+                    <div className="dg-bar">
+                      <span>שרטוט {idx+1} · לחץ להגדלה</span>
+                      {editor && <button className="dg-del" aria-label="מחק שרטוט" onClick={e=>{e.stopPropagation();if(confirm('למחוק?'))onDelImg(idx);}}><Ic n="trash" s={16}/></button>}
                     </div>
                   </div>
                 ))}
@@ -372,7 +388,8 @@ function ModelView({brand,cat,model,editor,admin,viewer,hq,data,favorites,onTogg
         </div>
       )}
 
-      {/* Parts table */}
+      {/* Parts */}
+      {tab==='parts' && (
       <div className="card-md" style={{padding:'14px 16px'}}>
 
         {/* Disclaimer */}
@@ -398,6 +415,10 @@ function ModelView({brand,cat,model,editor,admin,viewer,hq,data,favorites,onTogg
             <button onClick={onAddCol}               className="btn btn-sm btn-secondary">+ עמודה</button>
             <button onClick={()=>setShowPaste(v=>!v)} className="btn btn-sm btn-secondary">📋 הדבק</button>
           </>}
+          <Segmented compact value={partsView} onChange={changeView} options={[
+            {v:'cards',label:'כרטיסים',icon:'folder',tt:'תצוגת כרטיסים תלת־ממדית'},
+            {v:'list',label:'רשימה',icon:'clipboard',tt:'תצוגת טבלה (נדרשת לעריכה)'}
+          ]}/>
           <span className="tc-meta" style={{marginRight:'auto'}}>
             {filtered.length===partsBase.length
               ? <>{filtered.length.toLocaleString()} חלקים</>
@@ -407,7 +428,7 @@ function ModelView({brand,cat,model,editor,admin,viewer,hq,data,favorites,onTogg
         </div>
 
         {selRows.size>0 && (
-          <div style={{position:'sticky',bottom:12,zIndex:100,background:'#25D366',borderRadius:999,padding:'9px 12px 9px 20px',display:'flex',alignItems:'center',gap:10,boxShadow:'0 14px 32px -10px rgba(0,0,0,.4)',marginBottom:12,flexWrap:'wrap',animation:'fadeIn .2s'}}>
+          <div className="sel-bar" style={{position:'sticky',bottom:12,zIndex:100,background:'#25D366',borderRadius:999,padding:'9px 12px 9px 20px',display:'flex',alignItems:'center',gap:10,boxShadow:'0 14px 32px -10px rgba(0,0,0,.4)',marginBottom:12,flexWrap:'wrap',animation:'fadeIn .2s'}}>
             <span style={{color:'#fff',fontWeight:700,fontSize:13,flex:1}}>✓ {selRows.size} נבחרו</span>
             <button onClick={()=>setShowWaEditor(true)} style={{background:'#fff',border:'none',borderRadius:8,padding:'7px 16px',cursor:'pointer',fontWeight:700,color:'#25D366',fontSize:13}}>✏️ ערוך ושלח</button>
             <button onClick={()=>{selRows.forEach(pid=>onAddToCart(brand.id,cat.id,model.id,pid));clearRows();alert(`✅ ${selRows.size} פריטים נוספו לסל`);}}
@@ -429,6 +450,14 @@ function ModelView({brand,cat,model,editor,admin,viewer,hq,data,favorites,onTogg
           </div>
         )}
 
+        {partsView==='cards' ? (
+          <>
+            {editor && <div className="tc-meta" style={{marginBottom:10}}>לעריכת חלקים, עמודות ושורות עברו לתצוגת רשימה.</div>}
+            <PartsWall parts={filtered} cols={visibleCols} brand={brand} selRows={selRows} toggleRow={toggleRow}
+              isPnCol={isPnCol} copiedId={copiedId} copyVal={copyVal} rowHi={rowHi} editor={editor}
+              onAddToCart={pid=>onAddToCart(brand.id,cat.id,model.id,pid)}/>
+          </>
+        ) : (
         <div style={{overflowX:'auto',border:'1px solid var(--border)',borderRadius:11}}>
           <table className="tc-table" style={{width:'100%',minWidth:300}}>
             <thead>
@@ -556,7 +585,9 @@ function ModelView({brand,cat,model,editor,admin,viewer,hq,data,favorites,onTogg
             </tbody>
           </table>
         </div>
+        )}
       </div>
+      )}
 
       {reviewMode && admin && (() => {
         const reviewCols = ['nameHe','nameEn','mfgPn','tadPn'];

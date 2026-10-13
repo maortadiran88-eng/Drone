@@ -16,7 +16,18 @@ function App() {
   const [imgZoom,        setImgZoom]        = useState(1);
   const [cart,           setCart]           = useState([]);
   const [openBrandReq, setOpenBrandReq] = useState(null);
-  const music = useMusic();
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  // Ctrl/⌘+K or "/" opens the global search
+  useEffect(()=>{
+    const h=e=>{
+      const t=(document.activeElement&&document.activeElement.tagName||'').toLowerCase();
+      const typing=t==='input'||t==='textarea'||t==='select'||(document.activeElement&&document.activeElement.isContentEditable);
+      if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();setPaletteOpen(true);}
+      else if(e.key==='/'&&!typing&&!e.ctrlKey&&!e.metaKey&&!e.altKey){e.preventDefault();setPaletteOpen(true);}
+    };
+    window.addEventListener('keydown',h);
+    return()=>window.removeEventListener('keydown',h);
+  },[]);
   const [showCart,       setShowCart]       = useState(false);
   const [showNotif,      setShowNotif]      = useState(false);
   const [showMakatReview,setShowMakatReview]= useState(false);
@@ -467,8 +478,8 @@ function App() {
             {sel&&(<>
               <button onClick={goBack} className="hdr-btn tt tt-hdr" data-tt="חזרה למסך הקודם" aria-label="חזרה אחורה"><Ic n="back" s={19}/></button>
               <button onClick={goHome} className="hdr-btn tt tt-hdr" data-tt="חזרה למסך הבית" aria-label="מסך הבית"><Ic n="home" s={18}/></button>
-              <button onClick={()=>setSearchOpen(v=>!v)} className={'hdr-btn tt tt-hdr'+(searchOpen?' on':'')} data-tt="חיפוש חלק, דגם או מק&quot;ט" aria-label="חיפוש"><Ic n="search" s={18}/></button>
             </>)}
+            <button onClick={()=>setPaletteOpen(true)} className="hdr-btn tt tt-hdr" data-tt="חיפוש בכל הקטלוג (Ctrl+K)" aria-label="חיפוש"><Ic n="search" s={18}/></button>
           </div>
 
           {/* centre: title + date & time */}
@@ -494,7 +505,6 @@ function App() {
                 <button className="menu-item" onClick={()=>{setShowHelp(true);setMenuOpen(false);}}><span className="ic"><Ic n="help" s={17}/></span>מדריך שימוש</button>
                 {editor&&<button className="menu-item" onClick={()=>{openNotif();setMenuOpen(false);}}><span className="ic"><Ic n="bell" s={17}/></span>התראות{notifCount>0&&<span className="tc-meta" style={{marginRight:'auto'}}>({notifCount})</span>}</button>}
                 <button className="menu-item" onClick={()=>{toggleDark();}}><span className="ic"><Ic n={dark?'sun':'moon'} s={17}/></span>{dark?'מצב בהיר':'מצב כהה'}</button>
-                <button className="menu-item" onClick={()=>{TcMusic.toggle();}}><span className="ic"><Ic n={music.enabled?'volume':'volumeoff'} s={17}/></span>{music.enabled?'השתק מוזיקת רקע':'הפעל מוזיקת רקע'}</button>
 
                 {editor&&<div className="menu-divider"/>}
                 {admin&&<button className="menu-item" onClick={()=>{setShowMakatReview(true);setMenuOpen(false);}}><span className="ic"><Ic n="checkc" s={17}/></span>בדיקת מק"טים</button>}
@@ -644,7 +654,8 @@ function App() {
         </aside>
 
         {/* MAIN */}
-        <main style={{flex:1,overflowY:'auto',padding:14,paddingBottom:44}}>
+        <main className="app-main" style={{flex:1,overflowY:'auto',padding:14,paddingBottom:44}}>
+          <div key={model?model.id:'home'} className="page-in">
           {!model
             ?<HomeScreen data={data} onNav={nav} recent={recent} favorites={favorites} onToggleFav={toggleFav} loginRole={loginRole} reports={reports} techRequests={techRequests} alerts={alerts}
                 onOpenSidebar={()=>setSidebar(true)} onOpenBrand={bid=>{setSidebar(true);setOpenBrandReq({id:bid,n:Date.now()});}}
@@ -701,27 +712,25 @@ function App() {
                 waDefaults={data.waDefaults||['nameHe','tadPn']}
               />
           }
+          </div>
         </main>
       </div>
 
 
-      {/* IMAGE MODAL */}
+      {/* DRAWING VIEWER */}
       {imgModal.imgs.length>0&&(
-        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,.93)',zIndex:900,display:'flex',flexDirection:'column'}} onClick={()=>setImgModal({imgs:[],idx:0})}>
-          <div style={{display:'flex',justifyContent:'center',alignItems:'center',gap:8,padding:12,flexShrink:0,flexWrap:'wrap'}} onClick={e=>e.stopPropagation()}>
-            {imgModal.imgs.length>1&&<button onClick={()=>setImgModal(p=>({...p,idx:Math.max(0,p.idx-1)}))} style={{background:'#fff',border:'none',borderRadius:8,padding:'8px 14px',cursor:'pointer',fontSize:14,fontWeight:'bold'}}>◀</button>}
-            {[['🔍+',()=>setImgZoom(z=>Math.min(z+.5,8))],['🔍−',()=>setImgZoom(z=>Math.max(z-.5,.5))],['↺',()=>setImgZoom(1)]].map(([l,f])=>(
-              <button key={l} onClick={f} style={{background:'#fff',border:'none',borderRadius:8,padding:'8px 14px',cursor:'pointer',fontSize:14,fontWeight:'bold'}}>{l}</button>
-            ))}
-            {imgModal.imgs.length>1&&<button onClick={()=>setImgModal(p=>({...p,idx:Math.min(p.imgs.length-1,p.idx+1)}))} style={{background:'#fff',border:'none',borderRadius:8,padding:'8px 14px',cursor:'pointer',fontSize:14,fontWeight:'bold'}}>▶</button>}
-            <span style={{color:'rgba(255,255,255,.7)',fontSize:12}}>{Math.round(imgZoom*100)}%{imgModal.imgs.length>1?` | ${imgModal.idx+1}/${imgModal.imgs.length}`:''}</span>
-            <button onClick={()=>setImgModal({imgs:[],idx:0})} style={{background:'#e53935',border:'none',borderRadius:8,padding:'8px 14px',cursor:'pointer',fontSize:14,fontWeight:'bold',color:'#fff'}}>✕</button>
-          </div>
-          <div style={{flex:1,overflow:'auto',display:'flex',justifyContent:'center',padding:16,alignItems:'flex-start'}} onClick={e=>e.stopPropagation()}>
-            <img src={imgModal.imgs[imgModal.idx]} style={{transform:`scale(${imgZoom})`,transformOrigin:'top center',transition:'transform .2s',maxWidth:imgZoom<=1?'100%':'none'}} alt="שרטוט"/>
-          </div>
-        </div>
+        <ImageViewer imgs={imgModal.imgs} idx={imgModal.idx}
+          onIdx={n=>setImgModal(p=>({...p,idx:n}))}
+          onClose={()=>setImgModal({imgs:[],idx:0})}/>
       )}
+
+      {/* COMMAND PALETTE + MOBILE TAB BAR */}
+      <CommandPalette open={paletteOpen} onClose={()=>{setPaletteOpen(false);setQuery('');}}
+        query={query} setQuery={setQuery} results={results} recent={recent} data={data} canSeeHidden={editor}
+        onSelect={r=>nav(r.b.id,r.c.id,r.m.id,query)}/>
+      <BottomNav isHome={!model} browseOpen={sidebar}
+        onHome={goHome} onBrowse={()=>setSidebar(v=>!v)} onSearch={()=>setPaletteOpen(true)}
+        onCart={()=>setShowCart(true)} onMenu={()=>setMenuOpen(v=>!v)} cartCount={cart.length}/>
 
       {/* PANELS */}
       {showCart     &&<CartPanel cart={cart} data={data} onRemove={removeFromCart} onClear={clearCart} onClose={()=>setShowCart(false)} waDefaults={data.waDefaults||['nameHe','tadPn']}/>}

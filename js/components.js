@@ -17,7 +17,6 @@ function LoginScreen({data,onLogin}){
   return(
     <div className="login-bg" style={{position:'fixed',inset:0,overflow:'hidden',display:'flex',alignItems:'center',justifyContent:'center',padding:20,direction:'rtl'}}>
       <AirParticles/>
-      <div style={{position:'absolute',top:16,left:16,zIndex:3}}><MusicToggle/></div>
       <div style={{opacity:exiting?0:1,transform:exiting?'scale(1.04)':'scale(1)',transition:'opacity .45s ease, transform .45s ease',width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center',position:'relative'}}>
         {/* Blurred color blobs behind the glass card */}
         <div aria-hidden className="login-blob-a" style={{position:'absolute',width:280,height:280,borderRadius:'50%',filter:'blur(70px)',opacity:.5,top:-70,right:-60}}/>
@@ -138,58 +137,73 @@ function TechSiteLink(){
   );
 }
 
-// ══════════ HOME SCREEN ══════════
+// ══════════ HOME SCREEN (v2) ══════════
 function HomeScreen({data,onNav,recent,favorites,onToggleFav,loginRole,reports,techRequests,alerts,onOpenSidebar,query,setQuery,onOpenBrand,results,canSeeHidden}){
   const visBrands=data.brands.filter(b=>canSeeHidden||!b.hidden);
-  const total=visBrands.reduce((s,b)=>s+b.categories.reduce((ss,c)=>ss+c.models.filter(m=>canSeeHidden||!m.hidden).length,0),0);
-  const totalParts=visBrands.reduce((s,b)=>s+b.categories.reduce((ss,c)=>ss+c.models.filter(m=>canSeeHidden||!m.hidden).reduce((sss,m)=>sss+m.parts.length,0),0),0);
+  const visModels=c=>allModelsOf(c).filter(m=>canSeeHidden||!m.hidden);
+  const total=visBrands.reduce((s,b)=>s+b.categories.reduce((ss,c)=>ss+visModels(c).length,0),0);
+  const totalParts=visBrands.reduce((s,b)=>s+b.categories.reduce((ss,c)=>ss+visModels(c).reduce((sss,m)=>sss+m.parts.length,0),0),0);
   const greeting=getGreeting(data.greetings);
 
   const fmtTime=ts=>{const diff=Math.floor((Date.now()-ts)/60000);if(diff<1)return'עכשיו';if(diff<60)return`לפני ${diff} דק'`;if(diff<1440)return`לפני ${Math.floor(diff/60)} שע'`;return new Date(ts).toLocaleDateString('he-IL',{day:'2-digit',month:'2-digit'});};
-  const recentModels=recent.slice(0,6).map(rv=>{const b=data.brands.find(x=>x.id===rv.bid);const c=b?.categories.find(x=>x.id===rv.cid);const m=c?.models.find(x=>x.id===rv.mid);if(!b||!c||!m)return null;if(!canSeeHidden&&(b.hidden||m.hidden))return null;return{b,c,m,ts:rv.ts};}).filter(Boolean);
-  const favModels=[];data.brands.forEach(b=>b.categories.forEach(c=>c.models.forEach(m=>{if(favorites.has(m.id)&&(canSeeHidden||(!b.hidden&&!m.hidden)))favModels.push({b,c,m});})));
+  const recentModels=recent.slice(0,6).map(rv=>{
+    const f=findModelDeep(data,rv.mid);
+    if(!f||(!canSeeHidden&&(f.b.hidden||f.m.hidden)))return null;
+    return{b:f.b,c:f.c,m:f.m,ts:rv.ts};
+  }).filter(Boolean);
+  const favModels=[];
+  data.brands.forEach(b=>b.categories.forEach(c=>allModelsOf(c).forEach(m=>{if(favorites.has(m.id)&&(canSeeHidden||(!b.hidden&&!m.hidden)))favModels.push({b,c,m});})));
 
   const brandStats=b=>{
     let models=0,parts=0;
-    b.categories.forEach(c=>{const ms=c.models.filter(m=>canSeeHidden||!m.hidden);models+=ms.length;ms.forEach(m=>parts+=m.parts.length);});
+    b.categories.forEach(c=>{const ms=visModels(c);models+=ms.length;ms.forEach(m=>parts+=m.parts.length);});
     return{models,parts};
   };
+  const openBrand=bid=>(onOpenBrand?onOpenBrand(bid):onOpenSidebar());
 
   return(
-    <div className="tc-container" style={{paddingBottom:44}}>
+    <div className="tc-container home2" style={{paddingBottom:44}}>
 
-      {/* ── HERO ── */}
-      <div style={{position:'relative',textAlign:'center',padding:'34px 12px 30px'}}>
-        <div style={{position:'relative',zIndex:1}}>
+      {/* ── HERO: copy + live search on one side, the 3D unit on the other ── */}
+      <section className="h2-hero">
+        <div className="h2-copy">
           {greeting&&<div className="hero-greet rise-in" style={{'--d':0}}>{greeting}</div>}
-          <div className="hero-title rise-in" style={{marginBottom:10,'--d':1}}>קטלוג חלקי חילוף VRF</div>
-          <div className="tc-body rise-in" style={{marginBottom:26,color:'var(--sub)',fontSize:16,'--d':2}}>חיפוש חלקי חילוף לפי מק"ט, דגם או שם חלק</div>
+          <h1 className="h2-title rise-in" style={{'--d':1}}>קטלוג חלקי חילוף <span className="h2-vrf">VRF</span></h1>
+          <p className="h2-sub rise-in" style={{'--d':2}}>חיפוש חלקי חילוף לפי מק"ט, דגם או שם חלק</p>
 
           <div className="hero-search-wrap rise-in" style={{'--d':3}}>
             <span className="hs-ic"><Ic n="search" s={21}/></span>
-            <input value={query} onChange={e=>setQuery(e.target.value)}
-              placeholder="חיפוש לפי מק&quot;ט, דגם או שם חלק..."
-              className="hero-search"/>
-            {query&&<button onClick={()=>setQuery('')} style={{position:'absolute',left:16,top:'50%',transform:'translateY(-50%)',background:'none',border:'none',cursor:'pointer',color:'var(--sub)',fontSize:18}}>✕</button>}
+            <input value={query} onChange={e=>setQuery(e.target.value)} aria-label="חיפוש חלקי חילוף"
+              placeholder="חיפוש לפי מק&quot;ט, דגם או שם חלק..." className="hero-search"/>
+            {query&&<button onClick={()=>setQuery('')} aria-label="נקה חיפוש" style={{position:'absolute',left:16,top:'50%',transform:'translateY(-50%)',background:'none',border:'none',cursor:'pointer',color:'var(--sub)',display:'flex'}}><Ic n="close" s={18}/></button>}
             {query&&<SearchResultsPanel results={results} query={query} onClose={()=>setQuery('')} onSelect={r=>onNav(r.b.id,r.c.id,r.m.id,query)}/>}
           </div>
 
+          <div className="h2-chips rise-in" style={{'--d':4}}>
+            {visBrands.map(b=>(
+              <button key={b.id} className="h2-chip" onClick={()=>openBrand(b.id)}><i style={{background:b.color}}/>{b.name}</button>
+            ))}
+          </div>
         </div>
-      </div>
+        <div className="h2-stage rise-in" style={{'--d':2}}><HeroUnit3D/></div>
+      </section>
 
-      {/* ── BRAND BENTO GRID ── */}
-      <Reveal style={{marginBottom:30}}>
-        <div className="tc-sub-title" style={{textAlign:'center',marginBottom:14}}>או בחר מותג</div>
-        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(150px,1fr))',gap:14,maxWidth:760,margin:'0 auto'}}>
+      {/* ── BRAND DOORS ── */}
+      <Reveal style={{margin:'34px 0 38px'}}>
+        <h2 className="sec-h" style={{textAlign:'center'}}>או בחר מותג</h2>
+        <p className="sec-p" style={{textAlign:'center'}}>לחיצה על מותג פותחת אותו בסרגל, ומשם בוחרים קטגוריה ודגם</p>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(170px,1fr))',gap:14,maxWidth:820,margin:'0 auto'}}>
           {visBrands.map((b,bi)=>{
             const st=brandStats(b);
             return(
-              <TiltCard key={b.id} className="brand-tile" onClick={()=>(onOpenBrand?onOpenBrand(b.id):onOpenSidebar())}
-                style={{gridColumn:bi===0&&visBrands.length>1?'span 2':undefined,padding:'26px 18px',display:'flex',flexDirection:'column',alignItems:'center',gap:10,textAlign:'center'}}>
-                <div style={{position:'relative',zIndex:2,width:56,height:56,borderRadius:17,background:b.light||(b.color+'18'),display:'flex',alignItems:'center',justifyContent:'center',fontSize:21,fontWeight:700,color:b.color,letterSpacing:.5}}>
+              <TiltCard key={b.id} className="brand-tile" onClick={()=>openBrand(b.id)}
+                style={{'--bc':b.color,gridColumn:bi===0&&visBrands.length>1?'span 2':undefined,padding:'26px 20px',display:'flex',flexDirection:'column',alignItems:'flex-start',justifyContent:'flex-end',gap:8,textAlign:'start'}}>
+                <span className="bd-wm" aria-hidden="true">{b.name.slice(0,2)}</span>
+                <span className="bd-go"><Ic n="arrow" s={17}/></span>
+                <div style={{position:'relative',zIndex:2,width:56,height:56,borderRadius:17,background:b.light||(b.color+'18'),display:'flex',alignItems:'center',justifyContent:'center',fontSize:21,fontWeight:700,color:b.color,letterSpacing:.5,marginBottom:'auto'}}>
                   {b.name.slice(0,2)}
                 </div>
-                <div style={{position:'relative',zIndex:2,fontSize:21,color:'var(--text)',fontFamily:'var(--disp)'}}>{b.name}</div>
+                <div style={{position:'relative',zIndex:2,fontSize:26,color:'var(--text)',fontFamily:'var(--disp)'}}>{b.name}</div>
                 <div className="tc-meta" style={{position:'relative',zIndex:2}}>{st.models} דגמים · {st.parts.toLocaleString()} חלקים</div>
               </TiltCard>
             );
@@ -197,14 +211,21 @@ function HomeScreen({data,onNav,recent,favorites,onToggleFav,loginRole,reports,t
         </div>
       </Reveal>
 
+      {/* ── HOW IT WORKS ── */}
+      <Reveal style={{marginBottom:40}}>
+        <h2 className="sec-h">איך זה עובד</h2>
+        <p className="sec-p">שלושה צעדים מהחיפוש עד ההזמנה</p>
+        <HowItWorks/>
+      </Reveal>
+
       {/* Favorites */}
       {favModels.length>0&&(
-        <Reveal style={{marginBottom:22}}>
+        <Reveal style={{marginBottom:24}}>
           <div className="tc-sub-title" style={{marginBottom:10}}>מועדפים</div>
-          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(160px,1fr))',gap:10}}>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(180px,1fr))',gap:12}}>
             {favModels.map(({b,c,m})=>(
               <div key={m.id} className="mini-card">
-                <button onClick={e=>{e.stopPropagation();onToggleFav(m.id);}} style={{position:'absolute',top:8,left:10,background:'none',border:'none',fontSize:14,cursor:'pointer',display:'flex'}}><Ic n="star" s={16} fill="#f5b301" style={{color:'#f5b301'}}/></button>
+                <button onClick={e=>{e.stopPropagation();onToggleFav(m.id);}} aria-label="הסר ממועדפים" style={{position:'absolute',top:10,left:12,background:'none',border:'none',cursor:'pointer',display:'flex'}}><Ic n="star" s={16} fill="#f5b301" style={{color:'#f5b301'}}/></button>
                 <div onClick={()=>onNav(b.id,c.id,m.id)}>
                   <div className="mini-name" style={{paddingLeft:18}}>{m.name}</div>
                   <div className="tc-meta" style={{marginBottom:4}}><i className="bdot" style={{background:b.color}}/>{b.name} · {c.name}</div>
@@ -218,9 +239,9 @@ function HomeScreen({data,onNav,recent,favorites,onToggleFav,loginRole,reports,t
 
       {/* Recently viewed */}
       {recentModels.length>0&&(
-        <Reveal style={{marginBottom:22}}>
+        <Reveal style={{marginBottom:24}}>
           <div className="tc-sub-title" style={{marginBottom:10}}>נצפו לאחרונה</div>
-          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(160px,1fr))',gap:10}}>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(180px,1fr))',gap:12}}>
             {recentModels.map(({b,c,m,ts})=>(
               <div key={m.id} onClick={()=>onNav(b.id,c.id,m.id)} className="mini-card">
                 <div className="tc-meta" style={{marginBottom:4}}>{fmtTime(ts)}</div>
@@ -235,7 +256,7 @@ function HomeScreen({data,onNav,recent,favorites,onToggleFav,loginRole,reports,t
 
       {/* Quick stats strip */}
       <Reveal className="stat-strip">
-        {[['דגמים',total],['חלקים',totalParts.toLocaleString()],['מותגים',data.brands.length]].map(([lb,v])=>(
+        {[['דגמים',total],['חלקים',totalParts.toLocaleString()],['מותגים',visBrands.length]].map(([lb,v])=>(
           <div key={lb} className="stat-item"><span className="stat-n">{v}</span><span>{lb}</span></div>
         ))}
       </Reveal>
