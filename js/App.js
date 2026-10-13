@@ -16,6 +16,7 @@ function App() {
   const [imgZoom,        setImgZoom]        = useState(1);
   const [cart,           setCart]           = useState([]);
   const [openBrandReq, setOpenBrandReq] = useState(null);
+  const music = useMusic();
   const [showCart,       setShowCart]       = useState(false);
   const [showNotif,      setShowNotif]      = useState(false);
   const [showMakatReview,setShowMakatReview]= useState(false);
@@ -458,27 +459,31 @@ function App() {
       <header ref={headerRef} className="glass" style={{color:'var(--text)',borderBottom:`2px solid ${hdrBg}`,boxShadow:'0 3px 16px var(--shadow)',position:'sticky',top:0,zIndex:200,transition:'border-color .3s'}}>
 
         {/* Row 1 — minimized: identity + search toggle + one consolidated menu */}
-        <div style={{padding:'9px 12px',display:'flex',alignItems:'center',gap:10}}>
-          <button onClick={()=>setSidebar(v=>!v)} className="hdr-btn tt tt-hdr" data-tt="פתח/סגור תפריט צד"><Ic n="menu" s={19}/></button>
-          <div className="hdr-mark"><Ic n="mark" s={19} sw={1.8}/></div>
-          <span style={{fontWeight:700,fontSize:15,flexShrink:0,letterSpacing:0,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>חלקי חילוף</span>
-          <span className="tc-meta" style={{fontFamily:'monospace',flexShrink:0}}>
-            {now.toLocaleDateString('he-IL',{day:'2-digit',month:'2-digit'})} · {now.toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'})}
-          </span>
-          {saving==='saving'&&<span className="tt tt-hdr" data-tt="שומר..." style={{fontSize:11,flexShrink:0,display:'flex'}}><Ic n="save" s={15}/></span>}
-          {saving==='saved' &&<span className="tt tt-hdr" data-tt="נשמר" style={{fontSize:11,color:'var(--green)',flexShrink:0}}>✓</span>}
-          {saving==='error' &&<button onClick={()=>{alert('שגיאת שמירה: '+saveErr);runSave();}} style={{fontSize:11,color:'#fff',background:'var(--red)',border:'none',borderRadius:5,padding:'3px 7px',cursor:'pointer',flexShrink:0}}>⚠</button>}
+        <div className="hdr-row">
 
-          <div style={{flex:1}}/>
+          {/* start (right): side menu · back · home · search */}
+          <div className="hdr-zone">
+            <button onClick={()=>setSidebar(v=>!v)} className="hdr-btn tt tt-hdr tt-r" data-tt="פתיחה וסגירה של סרגל המותגים והדגמים" aria-label="פתח או סגור תפריט צד"><Ic n="menu" s={19}/></button>
+            {sel&&(<>
+              <button onClick={goBack} className="hdr-btn tt tt-hdr" data-tt="חזרה למסך הקודם" aria-label="חזרה אחורה"><Ic n="back" s={19}/></button>
+              <button onClick={goHome} className="hdr-btn tt tt-hdr" data-tt="חזרה למסך הבית" aria-label="מסך הבית"><Ic n="home" s={18}/></button>
+              <button onClick={()=>setSearchOpen(v=>!v)} className={'hdr-btn tt tt-hdr'+(searchOpen?' on':'')} data-tt="חיפוש חלק, דגם או מק&quot;ט" aria-label="חיפוש"><Ic n="search" s={18}/></button>
+            </>)}
+          </div>
 
-          {sel&&(<>
-            <button onClick={goBack} className="hdr-btn tt tt-hdr" data-tt="חזרה אחורה" aria-label="חזרה אחורה"><Ic n="back" s={19}/></button>
-            <button onClick={goHome} className="hdr-btn tt tt-hdr" data-tt="מסך הבית" aria-label="מסך הבית"><Ic n="home" s={18}/></button>
-            <button onClick={()=>setSearchOpen(v=>!v)} className={'hdr-btn tt tt-hdr'+(searchOpen?' on':'')} data-tt="חיפוש" aria-label="חיפוש"><Ic n="search" s={18}/></button>
-          </>)}
+          {/* centre: title + date & time */}
+          <div className="hdr-center">
+            <div className="hdr-id"><div className="hdr-mark"><Ic n="mark" s={19} sw={1.8}/></div><span className="hdr-title">חלקי חילוף</span></div>
+            <span className="hdr-date">{now.toLocaleDateString('he-IL',{day:'2-digit',month:'2-digit'})} · {now.toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'})}</span>
+          </div>
 
+          {/* end (left): save state + main menu */}
+          <div className="hdr-zone hdr-end">
+            {saving==='saving'&&<span className="tt tt-hdr" data-tt="שומר שינויים..." style={{fontSize:11,flexShrink:0,display:'flex'}}><Ic n="save" s={15}/></span>}
+            {saving==='saved' &&<span className="tt tt-hdr" data-tt="השינויים נשמרו" style={{flexShrink:0,color:'var(--green)',display:'flex'}}><Ic n="check" s={16} sw={2.2}/></span>}
+            {saving==='error' &&<button onClick={()=>{alert('שגיאת שמירה: '+saveErr);runSave();}} style={{fontSize:11,color:'#fff',background:'var(--red)',border:'none',borderRadius:5,padding:'3px 7px',cursor:'pointer',flexShrink:0}}>⚠</button>}
           <div className="menu-wrap">
-            <button onClick={()=>setMenuOpen(v=>!v)} className={'hdr-btn tt tt-hdr'+(menuOpen?' on':'')} data-tt="תפריט"><Ic n="dots" s={19}/></button>
+            <button onClick={()=>setMenuOpen(v=>!v)} className={'hdr-btn tt tt-hdr tt-l'+(menuOpen?' on':'')} data-tt="תפריט ראשי: השוואה, סל, מצב כהה ועוד" aria-label="תפריט"><Ic n="dots" s={19}/></button>
             {menuOpen&&<>
               <div onClick={()=>setMenuOpen(false)} style={{position:'fixed',inset:0,zIndex:240}}/>
               <div className="menu-panel" dir="rtl" style={{left:0,minWidth:250}}>
@@ -489,6 +494,7 @@ function App() {
                 <button className="menu-item" onClick={()=>{setShowHelp(true);setMenuOpen(false);}}><span className="ic"><Ic n="help" s={17}/></span>מדריך שימוש</button>
                 {editor&&<button className="menu-item" onClick={()=>{openNotif();setMenuOpen(false);}}><span className="ic"><Ic n="bell" s={17}/></span>התראות{notifCount>0&&<span className="tc-meta" style={{marginRight:'auto'}}>({notifCount})</span>}</button>}
                 <button className="menu-item" onClick={()=>{toggleDark();}}><span className="ic"><Ic n={dark?'sun':'moon'} s={17}/></span>{dark?'מצב בהיר':'מצב כהה'}</button>
+                <button className="menu-item" onClick={()=>{TcMusic.toggle();}}><span className="ic"><Ic n={music.enabled?'volume':'volumeoff'} s={17}/></span>{music.enabled?'השתק מוזיקת רקע':'הפעל מוזיקת רקע'}</button>
 
                 {editor&&<div className="menu-divider"/>}
                 {admin&&<button className="menu-item" onClick={()=>{setShowMakatReview(true);setMenuOpen(false);}}><span className="ic"><Ic n="checkc" s={17}/></span>בדיקת מק"טים</button>}
@@ -514,7 +520,7 @@ function App() {
                   <button className="menu-item" onClick={()=>{expXLS();setMenuOpen(false);}}><span className="ic"><Ic n="sheet" s={17}/></span>ייצוא ל-Excel</button>
                   <button className="menu-item" onClick={()=>{expJSON();setMenuOpen(false);}}><span className="ic"><Ic n="save" s={17}/></span>ייצוא גיבוי (JSON)</button>
                   <label className="menu-item" style={{cursor:'pointer'}}>
-                    <span className="ic">📂</span>ייבוא גיבוי (JSON)
+                    <span className="ic"><Ic n="folder" s={17}/></span>ייבוא גיבוי (JSON)
                     <input type="file" accept=".json" onChange={e=>{impFile(e);setMenuOpen(false);}} style={{display:'none'}}/>
                   </label>
                 </>}
@@ -523,6 +529,7 @@ function App() {
                 <button className="menu-item danger" onClick={()=>{setLoginRole(null);setSel(null);setSidebar(false);setMenuOpen(false);}}><span className="ic"><Ic n="power" s={17}/></span>יציאה מהמערכת</button>
               </div>
             </>}
+          </div>
           </div>
         </div>
 

@@ -18,7 +18,6 @@ function LoginScreen({data,onLogin}){
     <div className="login-bg" style={{position:'fixed',inset:0,overflow:'hidden',display:'flex',alignItems:'center',justifyContent:'center',padding:20,direction:'rtl'}}>
       <AirParticles/>
       <div style={{position:'absolute',top:16,left:16,zIndex:3}}><MusicToggle/></div>
-      <LoginPlayer/>
       <div style={{opacity:exiting?0:1,transform:exiting?'scale(1.04)':'scale(1)',transition:'opacity .45s ease, transform .45s ease',width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center',position:'relative'}}>
         {/* Blurred color blobs behind the glass card */}
         <div aria-hidden className="login-blob-a" style={{position:'absolute',width:280,height:280,borderRadius:'50%',filter:'blur(70px)',opacity:.5,top:-70,right:-60}}/>
@@ -334,7 +333,7 @@ function SidebarBrand({openReq,brand,sel,editor,admin,canSeeHidden,favorites,onT
             <Ic n={inCompare?'minuscirc':'pluscirc'} s={17}/>
           </button>
         )}
-        <button onClick={()=>onToggleFav(m.id)} style={{background:'none',border:'none',cursor:'pointer',padding:'0 5px',display:'flex'}}><Ic n="star" s={16} fill={favorites.has(m.id)?'#f5b301':'none'} style={{color:favorites.has(m.id)?'#f5b301':'var(--sub)'}}/></button>
+        <button onClick={()=>onToggleFav(m.id)} title={favorites.has(m.id)?'הסר ממועדפים':'הוסף למועדפים'} aria-label={favorites.has(m.id)?'הסר ממועדפים':'הוסף למועדפים'} style={{background:'none',border:'none',cursor:'pointer',padding:'0 5px',display:'flex'}}><Ic n="star" s={16} fill={favorites.has(m.id)?'#f5b301':'none'} style={{color:favorites.has(m.id)?'#f5b301':'var(--sub)'}}/></button>
         {admin&&<button onClick={()=>onDelModel(cid,m.id,scid)} style={{background:'none',border:'none',color:'#e53935',cursor:'pointer',fontSize:13,padding:'0 8px'}}>🗑</button>}
       </div>
     );

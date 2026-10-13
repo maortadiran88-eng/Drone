@@ -1,108 +1,158 @@
-// ══════════ TcMusic — login-screen background music ══════════
-// Main source : the YouTube track chosen by the owner, played through YouTube's own embedded player
-//               (visible mini-player, as YouTube's terms require). Starts on the first click / key press,
-//               because browsers block sound before a user gesture.
-// Fallback    : if YouTube can't load or the video can't be embedded, an original ambient melody is
-//               synthesised live with Web Audio (no files), so the screen is never silent by accident.
-// Scope       : the login screen only. Leaving it (logging in) stops and removes the player.
+// ══════════ TcMusic — calm "lo-fi / chill" background music for focused work ══════════
+// Generated live in the browser with Web Audio (warm electric-piano chords, soft bass, light
+// swung drums, a few sparse bell notes, faint vinyl crackle). No audio files, no network.
+// Browsers only allow sound after a user gesture, so it starts on the first click / key press.
+// A speaker toggle (login corner + ⋮ menu) mutes it; the choice is remembered per device.
 const TcMusic=(()=>{
   const KEY='tc_music';
-  const VIDEO='xAR6N9N8e6U';
-  const readPref=()=>{try{return localStorage.getItem(KEY)!=='off';}catch(e){return true;}};
-  let enabled=readPref(), gesture=false;
-  const subs=new Set();
-
-  // ── YouTube backend ──
-  let yt=null,ytReady=false,ytFailed=false,ytPlaying=false,pending=false;
-  const ytPlay=()=>{try{yt.unMute();yt.setVolume(65);yt.playVideo();}catch(e){}};
-
-  // ── Synth backend (fallback) ──
-  const BPM=68, STEP=60/BPM/2;
-  const CH=[{b:48,p:[60,64,67,71]},{b:45,p:[57,60,64,67]},{b:41,p:[57,60,64,65]},{b:43,p:[55,59,62,64]},{b:43,p:[55,60,62,67]}];
-  const PROG=[0,1,2,3,0,1,2,4];
+  const BPM=72, STEP=60/BPM/2, SWING=.2, VOL=.15;
   const N=null;
-  const MEL=[76,N,N,79,N,76,N,74, 72,N,N,74,N,76,N,N, 76,N,N,72,N,74,N,76, 79,N,N,76,N,74,N,N,
-             76,N,79,N,81,N,79,N, 72,N,74,N,76,N,N,N, 81,N,N,79,N,76,N,72, 74,N,N,72,N,N,N,N];
-  let ctx=null,master=null,dry=null,wet=null,mel=null,timer=null,step=0,nextT=0,synthOn=false;
+  // 8-bar loop:  Dm9 · G13 · Cmaj9 · Am9 · Dm9 · G13 · Cmaj9 · Fmaj9
+  const CH=[
+    {b:38,p:[53,57,60,64]},   // Dm9
+    {b:43,p:[53,59,64,67]},   // G13
+    {b:36,p:[55,59,62,64]},   // Cmaj9
+    {b:45,p:[55,59,60,64]},   // Am9
+    {b:41,p:[57,60,64,67]}    // Fmaj9
+  ];
+  const PROG=[0,1,2,3,0,1,2,4];
+  const MEL=[
+    N,N,N,81,N,N,77,N,   76,N,N,N,74,N,N,N,   N,79,N,N,76,N,74,N,   N,N,72,N,N,N,76,N,
+    N,N,N,81,N,N,84,N,   83,N,N,79,N,N,N,N,   N,N,76,N,79,N,N,74,   72,N,N,N,N,69,N,N
+  ];
+  let ctx=null,master=null,dry=null,wet=null,mel=null,noise=null,timer=null,step=0,nextT=0,playing=false;
+  const subs=new Set();
+  const readPref=()=>{try{return localStorage.getItem(KEY)!=='off';}catch(e){return true;}};
+  let enabled=readPref();
+  const state=()=>({enabled,playing});
+  const emit=()=>{const s=state();subs.forEach(f=>f(s));};
   const mtof=m=>440*Math.pow(2,(m-69)/12);
-  const impulse=(c,sec,decay)=>{const len=Math.floor(c.sampleRate*sec),b=c.createBuffer(2,len,c.sampleRate);
-    for(let ch=0;ch<2;ch++){const d=b.getChannelData(ch);for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,decay);}return b;};
+  const rnd=(a,b)=>a+Math.random()*(b-a);
+
+  const impulse=(c,sec,decay)=>{
+    const len=Math.floor(c.sampleRate*sec),b=c.createBuffer(2,len,c.sampleRate);
+    for(let ch=0;ch<2;ch++){const d=b.getChannelData(ch);for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,decay);}
+    return b;
+  };
   const build=()=>{
     const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return false;
-    ctx=new AC();const comp=ctx.createDynamicsCompressor();
-    master=ctx.createGain();master.gain.value=0;master.connect(comp);comp.connect(ctx.destination);
+    ctx=new AC();
+    const lpf=ctx.createBiquadFilter();lpf.type='lowpass';lpf.frequency.value=4200;lpf.Q.value=.4;     // warm / tape-like
+    const comp=ctx.createDynamicsCompressor();
+    master=ctx.createGain();master.gain.value=0;
+    master.connect(lpf);lpf.connect(comp);comp.connect(ctx.destination);
     dry=ctx.createGain();dry.connect(master);
-    const verb=ctx.createConvolver();verb.buffer=impulse(ctx,3,2.6);
-    wet=ctx.createGain();wet.gain.value=.55;wet.connect(verb);verb.connect(master);
+    const verb=ctx.createConvolver();verb.buffer=impulse(ctx,1.9,2.4);
+    wet=ctx.createGain();wet.gain.value=.4;wet.connect(verb);verb.connect(master);
     const echo=ctx.createDelay(1);echo.delayTime.value=STEP*3;
-    const fb=ctx.createGain();fb.gain.value=.32;echo.connect(fb);fb.connect(echo);
+    const fb=ctx.createGain();fb.gain.value=.3;echo.connect(fb);fb.connect(echo);
     mel=ctx.createGain();mel.connect(dry);mel.connect(wet);
-    const es=ctx.createGain();es.gain.value=.5;mel.connect(es);es.connect(echo);echo.connect(master);
+    const es=ctx.createGain();es.gain.value=.45;mel.connect(es);es.connect(echo);echo.connect(master);
+    // shared white-noise buffer for drums
+    const nb=ctx.createBuffer(1,ctx.sampleRate,ctx.sampleRate),nd=nb.getChannelData(0);
+    for(let i=0;i<nd.length;i++)nd[i]=Math.random()*2-1;
+    noise=nb;
+    // faint vinyl crackle (sparse pops), looped
+    const cb=ctx.createBuffer(1,ctx.sampleRate*5,ctx.sampleRate),cd=cb.getChannelData(0);
+    for(let i=0;i<cd.length;i++){const r=Math.random();cd[i]=r<.0007?(Math.random()*2-1):0;}
+    const cs=ctx.createBufferSource();cs.buffer=cb;cs.loop=true;
+    const chp=ctx.createBiquadFilter();chp.type='highpass';chp.frequency.value=1800;
+    const cg=ctx.createGain();cg.gain.value=.03;
+    cs.connect(chp);chp.connect(cg);cg.connect(master);cs.start();
     return true;
   };
-  const tone=(t,f,dur,type,gain,att,rel,dests,detune)=>{
-    const o=ctx.createOscillator(),g=ctx.createGain();o.type=type;o.frequency.value=f;if(detune)o.detune.value=detune;
-    g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(gain,t+att);
-    g.gain.setValueAtTime(gain,t+Math.max(att,dur));g.gain.exponentialRampToValueAtTime(.0001,t+dur+rel);
-    o.connect(g);dests.forEach(d=>g.connect(d));o.start(t);o.stop(t+dur+rel+.05);
+
+  // electric-piano voice: fundamental + soft overtones, quick bloom then gentle decay
+  const keys=(t,f,dur,g,dests,det)=>{
+    [[1,1],[2,.26],[4,.06]].forEach(([m,a])=>{
+      const o=ctx.createOscillator(),e=ctx.createGain();
+      o.type='sine';o.frequency.value=f*m;o.detune.value=det||0;
+      const pk=g*a;
+      e.gain.setValueAtTime(.0001,t);
+      e.gain.linearRampToValueAtTime(pk,t+.008);
+      e.gain.exponentialRampToValueAtTime(pk*.4,t+.55);
+      e.gain.setValueAtTime(pk*.4,t+Math.max(.56,dur));
+      e.gain.exponentialRampToValueAtTime(.0001,t+dur+1.3);
+      o.connect(e);dests.forEach(d=>e.connect(d));
+      o.start(t);o.stop(t+dur+1.4);
+    });
   };
-  const playStep=(s,t)=>{
-    const bar=Math.floor(s/8),pos=s%8,ch=CH[PROG[bar]];
-    if(pos===0){
-      ch.p.forEach((n,i)=>{tone(t,mtof(n),8*STEP*.96,'triangle',.032,1.4,2.4,[dry,wet],i%2?4:-4);tone(t,mtof(n),8*STEP*.96,'sine',.026,1.4,2.4,[dry,wet]);});
-      tone(t,mtof(ch.b),4*STEP,'sine',.1,.06,.9,[dry]);
-    }
-    if(pos===4)tone(t,mtof(ch.b),3*STEP,'sine',.07,.06,.9,[dry]);
-    const m=MEL[s];
-    if(m!=null){tone(t,mtof(m),STEP*1.5,'sine',.07,.012,.9,[mel]);tone(t,mtof(m)*2,STEP*.7,'triangle',.014,.008,.5,[mel]);}
+  const bass=(t,f,dur,g)=>{
+    const o=ctx.createOscillator(),e=ctx.createGain();
+    o.type='sine';o.frequency.value=f;
+    e.gain.setValueAtTime(.0001,t);e.gain.linearRampToValueAtTime(g,t+.02);
+    e.gain.setValueAtTime(g,t+dur*.6);e.gain.exponentialRampToValueAtTime(.0001,t+dur+.25);
+    o.connect(e);e.connect(dry);o.start(t);o.stop(t+dur+.3);
   };
-  const sched=()=>{if(!ctx||!synthOn)return;while(nextT<ctx.currentTime+.4){playStep(step,nextT);nextT+=STEP;step=(step+1)%MEL.length;}};
-  const synthStart=()=>{
-    if(synthOn)return;if(!ctx&&!build())return;if(ctx.state==='suspended')ctx.resume();
-    synthOn=true;step=0;nextT=ctx.currentTime+.25;const now=ctx.currentTime;
-    master.gain.cancelScheduledValues(now);master.gain.setValueAtTime(master.gain.value,now);master.gain.linearRampToValueAtTime(.17,now+3);
-    clearInterval(timer);timer=setInterval(sched,120);sched();
+  const kick=(t,g)=>{
+    const o=ctx.createOscillator(),e=ctx.createGain();
+    o.type='sine';o.frequency.setValueAtTime(120,t);o.frequency.exponentialRampToValueAtTime(42,t+.13);
+    e.gain.setValueAtTime(g,t);e.gain.exponentialRampToValueAtTime(.0001,t+.3);
+    o.connect(e);e.connect(dry);o.start(t);o.stop(t+.32);
   };
-  const synthStop=()=>{
-    if(!synthOn)return;synthOn=false;clearInterval(timer);
-    if(ctx){const now=ctx.currentTime;master.gain.cancelScheduledValues(now);master.gain.setValueAtTime(master.gain.value,now);master.gain.linearRampToValueAtTime(0,now+.8);}
+  const noiseHit=(t,type,freq,q,g,len,dests)=>{
+    const s=ctx.createBufferSource();s.buffer=noise;
+    const f=ctx.createBiquadFilter();f.type=type;f.frequency.value=freq;f.Q.value=q;
+    const e=ctx.createGain();e.gain.setValueAtTime(g,t);e.gain.exponentialRampToValueAtTime(.0001,t+len);
+    s.connect(f);f.connect(e);dests.forEach(d=>e.connect(d));s.start(t,Math.random()*.5);s.stop(t+len+.02);
   };
 
-  // ── shared ──
-  const playingNow=()=>ytPlaying||synthOn;
-  const state=()=>({enabled,playing:playingNow(),ytFailed});
-  const emit=()=>{const s=state();subs.forEach(f=>f(s));};
-  const start=()=>{
-    if(!enabled)return;
-    if(ytFailed){synthStart();emit();return;}
-    if(yt&&ytReady){ytPlay();return;}
-    pending=true;                                   // player still loading — start the moment it is ready
+  const playStep=(s,t0)=>{
+    const bar=Math.floor(s/8),pos=s%8,ch=CH[PROG[bar]];
+    const t=t0+(pos%2?STEP*SWING:0);                       // swing the off-beats
+    // chords — "boom … chk" comping
+    if(pos===0){ch.p.forEach((n,i)=>keys(t+i*.014+rnd(0,.008),mtof(n),STEP*3.2,.05*rnd(.88,1),[dry,wet],rnd(-6,6)));}
+    if(pos===5&&bar%2===0){ch.p.slice(1).forEach((n,i)=>keys(t+i*.012,mtof(n),STEP*1.2,.032,[dry,wet],rnd(-5,5)));}
+    // bass
+    if(pos===0)bass(t,mtof(ch.b),STEP*2.6,.17);
+    if(pos===6)bass(t,mtof(ch.b),STEP*1,.1);
+    // drums — soft and unobtrusive
+    if(pos===0||pos===5)kick(t,pos===0?.34:.24);
+    if(pos===2||pos===6){noiseHit(t,'bandpass',1900,.8,.1,.17,[dry,wet]);}
+    noiseHit(t,'highpass',7500,.7,pos%2?.012:.022,.05,[dry]);
+    // sparse bell melody
+    const m=MEL[s];
+    if(m!=null)keys(t,mtof(m),STEP*1.6,.045,[mel],0);
   };
-  const pauseAll=()=>{pending=false;try{if(yt&&ytReady)yt.pauseVideo();}catch(e){}synthStop();};
+  const sched=()=>{
+    if(!ctx||!playing)return;
+    while(nextT<ctx.currentTime+.5){playStep(step,nextT);nextT+=STEP;step=(step+1)%MEL.length;}
+  };
+  const start=()=>{
+    if(!enabled||playing)return;
+    if(!ctx&&!build())return;
+    if(ctx.state==='suspended')ctx.resume();
+    playing=true;step=0;nextT=ctx.currentTime+.3;
+    const now=ctx.currentTime;
+    master.gain.cancelScheduledValues(now);master.gain.setValueAtTime(master.gain.value,now);
+    master.gain.linearRampToValueAtTime(VOL,now+4);
+    clearInterval(timer);timer=setInterval(sched,120);sched();
+    emit();
+  };
+  const stop=()=>{
+    if(!playing)return;
+    playing=false;clearInterval(timer);
+    if(ctx){const now=ctx.currentTime;master.gain.cancelScheduledValues(now);master.gain.setValueAtTime(master.gain.value,now);master.gain.linearRampToValueAtTime(0,now+.9);}
+    emit();
+  };
   const toggle=()=>{
-    if(enabled&&!playingNow()){gesture=true;start();emit();return;}   // icon says "on" but nothing plays yet → start
+    if(enabled&&!playing){start();return;}                 // icon says "on" but nothing plays yet → this click starts it
     enabled=!enabled;try{localStorage.setItem(KEY,enabled?'on':'off');}catch(e){}
-    if(enabled){gesture=true;start();}else pauseAll();
+    if(enabled)start();else stop();
     emit();
   };
   const evs=['pointerdown','keydown','touchstart'];
   const go=e=>{
     if(e.target&&e.target.closest&&e.target.closest('[data-music-toggle]'))return;
     evs.forEach(ev=>window.removeEventListener(ev,go,true));
-    gesture=true;if(enabled)start();
+    if(enabled)start();
   };
   evs.forEach(ev=>window.addEventListener(ev,go,true));
-
-  return{
-    state,toggle,start,
-    subscribe:f=>{subs.add(f);return()=>subs.delete(f);},
-    VIDEO,
-    _attach:p=>{yt=p;ytReady=true;ytFailed=false;if(pending&&enabled){pending=false;ytPlay();}emit();},
-    _ready:()=>ytReady,
-    _state:code=>{const was=ytPlaying;ytPlaying=(code===1);if(was!==ytPlaying)emit();},
-    _fail:force=>{if(ytReady&&!force)return;try{if(yt)yt.destroy();}catch(e){}ytFailed=true;yt=null;ytReady=false;ytPlaying=false;pending=false;if(enabled&&gesture)synthStart();emit();},
-    _detach:()=>{try{if(yt)yt.destroy();}catch(e){}yt=null;ytReady=false;ytPlaying=false;pending=false;ytFailed=false;synthStop();emit();}
-  };
+  document.addEventListener('visibilitychange',()=>{
+    if(!ctx||!playing)return;
+    if(document.hidden)ctx.suspend();else ctx.resume();
+  });
+  return{state,toggle,start,stop,subscribe:f=>{subs.add(f);return()=>subs.delete(f);}};
 })();
 
 function useMusic(){
@@ -120,40 +170,4 @@ function MusicToggle(){
       {m.enabled&&<span className={'eq'+(m.playing?' on':'')} aria-hidden="true"><i/><i/><i/></span>}
     </button>
   );
-}
-
-// Visible YouTube mini-player (YouTube requires the embedded player to stay visible while it plays).
-function LoginPlayer(){
-  const box=useRef(null);
-  const m=useMusic();
-  useEffect(()=>{
-    let dead=false,player=null,t=null;
-    const make=()=>{
-      if(dead||!box.current)return;
-      try{
-        const host=document.createElement('div');box.current.appendChild(host);
-        player=new window.YT.Player(host,{
-          videoId:TcMusic.VIDEO,width:'100%',height:'200',
-          playerVars:{controls:1,rel:0,playsinline:1,loop:1,playlist:TcMusic.VIDEO,modestbranding:1,iv_load_policy:3},
-          events:{
-            onReady:()=>{clearTimeout(t);TcMusic._attach(player);},
-            onStateChange:e=>TcMusic._state(e.data),
-            onError:()=>TcMusic._fail(true)
-          }
-        });
-      }catch(e){TcMusic._fail();}
-    };
-    if(window.YT&&window.YT.Player)make();
-    else{
-      const prev=window.onYouTubeIframeAPIReady;
-      window.onYouTubeIframeAPIReady=()=>{if(prev)prev();make();};
-      if(!document.getElementById('yt-api')){
-        const s=document.createElement('script');s.id='yt-api';s.src='https://www.youtube.com/iframe_api';
-        s.onerror=()=>TcMusic._fail();document.head.appendChild(s);
-      }
-      t=setTimeout(()=>{if(!TcMusic._ready())TcMusic._fail();},9000);
-    }
-    return()=>{dead=true;clearTimeout(t);TcMusic._detach();};
-  },[]);
-  return <div className="yt-card" ref={box} style={m.ytFailed?{display:'none'}:undefined} aria-label="נגן מוזיקת רקע"/>;
 }
