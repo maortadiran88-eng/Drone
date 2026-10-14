@@ -39,36 +39,48 @@ function usePointerFollow(ref, ry, rx, rest){
   }, []);
 }
 
-// ══════════ 3D HERO UNIT — a VRF outdoor unit that follows the cursor and comes apart ══════════
+// ══════════ 3D HERO UNIT — a designed ceiling-type indoor unit (evaporator), TADIRAN VRF G ══════════
+// Seen from below, like looking up at the ceiling. Follows the cursor; hover / tap to take it apart.
 function HeroUnit3D(){
   const ref = useRef(null);
   const [open,setOpen] = useState(false);
-  usePointerFollow(ref, 26, 14, {y:-16, x:6});
+  usePointerFollow(ref, 24, 14, {y:-18, x:16});
   const blades = [];
-  for (let i=0;i<7;i++) blades.push(<path key={i} transform={`rotate(${(i*360/7).toFixed(1)})`} d="M0 0 C 9 -8 24 -30 9 -47 C -6 -42 -10 -16 0 0Z"/>);
-  const wires = [[10,14,60,14],[60,14,60,40],[10,30,90,30],[90,30,90,58],[20,46,20,70],[20,70,70,70],[40,46,40,62]];
+  for (let i=0;i<11;i++) blades.push(<path key={i} transform={`rotate(${(i*360/11).toFixed(1)})`} d="M0 -9 C 9 -14 16 -30 9 -46 C 4 -34 1 -22 -3 -9 Z"/>);
+  const streaks = [];
+  [['t',0,-1],['b',0,1],['l',-1,0],['r',1,0]].forEach(([side,dx,dy])=>{
+    for (let k=0;k<3;k++) streaks.push(<i key={side+k} className={'hu-st '+side} style={{'--k':k,'--tx':(dx*48)+'px','--ty':(dy*48)+'px','--d':(k*.6+(dx?.25:0))+'s'}}/>);
+  });
   return(
     <div className={'hu-wrap'+(open?' is-open':'')} aria-hidden="true"
       onMouseEnter={()=>setOpen(true)} onMouseLeave={()=>setOpen(false)} onClick={()=>setOpen(v=>!v)}>
       <div className="hu-glow"/>
       <div className="hu-float">
         <div className={'hu'+(open?' open':'')} ref={ref}>
-          <div className="hu-layer hu-case"  style={{'--z0':'-14px','--z1':'-150px'}}/>
-          <div className="hu-layer hu-coil"  style={{'--z0':'-7px','--z1':'-75px'}}><i className="hu-sensor"/></div>
-          <div className="hu-layer hu-board" style={{'--z0':'0px','--z1':'-6px'}}>
-            <svg viewBox="0 0 100 80" width="100%" height="100%" fill="none" stroke="#7fe3d2" strokeWidth="1.2">
-              {wires.map(([a,b,c,d],i)=><line key={i} x1={a} y1={b} x2={c} y2={d}/>)}
-              <rect x="66" y="44" width="22" height="18" rx="2" fill="#0b2a25"/><rect x="12" y="50" width="14" height="14" rx="2" fill="#0b2a25"/>
-            </svg>
+          {/* back: casing with control box and drain pump */}
+          <div className="hu-layer hu-body" style={{'--z0':'-12px','--z1':'-150px'}}>
+            <i className="hu-pump"/><i className="hu-ctrl"/>
           </div>
-          <div className="hu-layer hu-fan" style={{'--z0':'7px','--z1':'80px'}}>
-            <svg className="hu-blades" viewBox="-50 -50 100 100" width="240" height="240" fill="#0a2a63" fillOpacity=".88">{blades}<circle r="9" fill="#0b1b3a"/><circle r="3" fill="#6b7a99"/></svg>
+          {/* heat-exchanger coil (copper fins) around the fan */}
+          <div className="hu-layer hu-coil" style={{'--z0':'-6px','--z1':'-60px'}}/>
+          {/* turbo fan */}
+          <div className="hu-layer hu-fan" style={{'--z0':'0px','--z1':'32px'}}>
+            <svg className="hu-blades" viewBox="-50 -50 100 100" width="164" height="164">{blades}<circle r="9" fill="#e7edf7"/><circle r="3.2" fill="#8795b0"/></svg>
           </div>
-          <div className="hu-layer hu-grille" style={{'--z0':'14px','--z1':'160px'}}/>
+          {/* filter */}
+          <div className="hu-layer hu-filter" style={{'--z0':'6px','--z1':'104px'}}/>
+          {/* decorative panel: 4 outlets, inlet grille, brand */}
+          <div className="hu-layer hu-panel" style={{'--z0':'12px','--z1':'176px'}}>
+            <i className="hu-out o-t"/><i className="hu-out o-b"/><i className="hu-out o-l"/><i className="hu-out o-r"/>
+            <i className="hu-grl"/>
+            <i className="hu-led"/>
+            <span className="hu-brand"><b>TADIRAN</b><u>VRF G</u></span>
+          </div>
+          {streaks}
         </div>
         <div className="hu-lab hu-lab1"><i/>מנוע מאוורר</div>
         <div className="hu-lab hu-lab2"><i/>לוח אלקטרוני</div>
-        <div className="hu-lab hu-lab3"><i/>חיישן טמפרטורה</div>
+        <div className="hu-lab hu-lab3"><i/>משאבת ניקוז</div>
       </div>
       <div className="hu-hint">{open?'כל חלק במערכת, עם המק"ט שלו':'הציבו עכבר או לחצו כדי לפרק את היחידה'}</div>
     </div>
