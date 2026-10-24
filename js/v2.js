@@ -11,14 +11,16 @@ const findModelDeep = (data,mid) => {
   return null;
 };
 
-// ─── pointer-follow rotation (smooth, eased) ───
-function usePointerFollow(ref, ry, rx, rest){
+// ─── pointer-follow rotation (smooth, eased). `restRef.current` = {y,x} can change at any time; returns a ref whose .current() re-aims ───
+function usePointerFollow(ref, ry, rx, restRef){
+  const api = useRef(null);
   useEffect(()=>{
     const el = ref.current; if(!el) return;
     const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    let ty=rest.y, tx=rest.x, cy=ty, cx=tx, raf=0;
+    const R = () => restRef.current;
+    let ty=R().y, tx=R().x, cy=ty, cx=tx, raf=0;
     const clamp = v => Math.max(-1, Math.min(1, v));
-    const apply = () => { el.style.transform = `rotateY(${cy.toFixed(2)}deg) rotateX(${cx.toFixed(2)}deg)`; };
+    const apply = () => { el.style.transform = `rotateX(${cx.toFixed(2)}deg) rotateY(${cy.toFixed(2)}deg)`; el.style.setProperty('--ry', cy.toFixed(2)); el.style.setProperty('--rx', cx.toFixed(2)); };
     const loop = () => {
       cy += (ty-cy)*.085; cx += (tx-cx)*.085; apply();
       raf = (Math.abs(ty-cy)>.02 || Math.abs(tx-cx)>.02) ? requestAnimationFrame(loop) : 0;
@@ -28,59 +30,118 @@ function usePointerFollow(ref, ry, rx, rest){
       const r = el.getBoundingClientRect();
       const nx = clamp((e.clientX-(r.left+r.width/2))/(window.innerWidth*.45));
       const ny = clamp((e.clientY-(r.top+r.height/2))/(window.innerHeight*.45));
-      ty = rest.y + nx*ry; tx = rest.x - ny*rx; wake();
+      ty = R().y + nx*ry; tx = R().x - ny*rx; wake();
     };
-    const onLeave = () => { ty=rest.y; tx=rest.x; wake(); };
+    const onLeave = () => { ty=R().y; tx=R().x; wake(); };
+    api.current = () => { ty=R().y; tx=R().x; wake(); };
     apply();
     if (reduce) return;
     window.addEventListener('pointermove', onMove, {passive:true});
     document.documentElement.addEventListener('mouseleave', onLeave);
     return () => { window.removeEventListener('pointermove', onMove); document.documentElement.removeEventListener('mouseleave', onLeave); if(raf) cancelAnimationFrame(raf); };
   }, []);
+  return api;
 }
 
-// ══════════ 3D HERO UNIT — a designed ceiling-type indoor unit (evaporator), TADIRAN VRF G ══════════
-// Seen from below, like looking up at the ceiling. Follows the cursor; hover / tap to take it apart.
+// ══════════ 3D HERO UNIT — the Tadiran wall-mounted indoor unit (silver glass, 24° display) ══════════
+// Follows the cursor. Hover / tap takes it apart: the cover lifts away and the real components separate in depth —
+// electronic board (far right, label top-right), fan motor (behind the board, label bottom-right),
+// cross-flow roller "מאיץ" (full length, label on the left), plus filter, coil and chassis.
 function HeroUnit3D(){
   const ref = useRef(null);
+  const restRef = useRef({y:-24, x:10});
   const [open,setOpen] = useState(false);
-  usePointerFollow(ref, 24, 14, {y:-18, x:16});
-  const blades = [];
-  for (let i=0;i<11;i++) blades.push(<path key={i} transform={`rotate(${(i*360/11).toFixed(1)})`} d="M0 -9 C 9 -14 16 -30 9 -46 C 4 -34 1 -22 -3 -9 Z"/>);
-  const streaks = [];
-  [['t',0,-1],['b',0,1],['l',-1,0],['r',1,0]].forEach(([side,dx,dy])=>{
-    for (let k=0;k<3;k++) streaks.push(<i key={side+k} className={'hu-st '+side} style={{'--k':k,'--tx':(dx*48)+'px','--ty':(dy*48)+'px','--d':(k*.6+(dx?.25:0))+'s'}}/>);
-  });
+  const retarget = usePointerFollow(ref, 28, 12, restRef);
+  useEffect(()=>{ restRef.current = open ? {y:-24, x:-10} : {y:-24, x:10}; if(retarget.current) retarget.current(); },[open]);
+  const slices = [];
+  for (let k=1;k<=18;k++) slices.push(<i key={k} className="hu-sl" style={{'--k':k}}/>);
+  const air = [];
+  for (let k=0;k<8;k++) air.push(<i key={k} style={{'--k':k,'--d':((k*.37)%1.5).toFixed(2)+'s'}}/>);
   return(
     <div className={'hu-wrap'+(open?' is-open':'')} aria-hidden="true"
       onMouseEnter={()=>setOpen(true)} onMouseLeave={()=>setOpen(false)} onClick={()=>setOpen(v=>!v)}>
       <div className="hu-glow"/>
       <div className="hu-float">
-        <div className={'hu'+(open?' open':'')} ref={ref}>
-          {/* back: casing with control box and drain pump */}
-          <div className="hu-layer hu-body" style={{'--z0':'-12px','--z1':'-150px'}}>
-            <i className="hu-pump"/><i className="hu-ctrl"/>
+        <div className="hu" ref={ref}>
+          <div className={'hu-ac'+(open?' open flapopen':'')}>
+            {/* ── real components ── */}
+            <div className="hu-inner">
+              <div className="hu-part hu-chassis" style={{'--z0':'-60px','--z1':'-125px','--dl':'.35s'}}>
+                <i className="hu-tray"/>
+                <i className="hu-screw" style={{left:'3%',top:'8%'}}/><i className="hu-screw" style={{right:'3%',top:'8%'}}/><i className="hu-screw" style={{left:'3%',bottom:'30%'}}/><i className="hu-screw" style={{right:'3%',bottom:'30%'}}/>
+              </div>
+              <div className="hu-part hu-coil" style={{'--z0':'-54px','--z1':'-82px','--dl':'.25s'}}/>
+              <div className="hu-part hu-filter" style={{'--z0':'-14px','--z1':'96px','--dl':'.1s'}}/>
+              <div className="hu-part hu-roller" style={{'--z0':'-46px','--z1':'-30px','--dl':'.15s'}}>
+                {['0','25%','50%','75%','calc(100% - 6px)'].map(x=><i key={x} className="hu-ring" style={{'--x':x}}/>)}
+                <span className="hu-lab l ml" style={{'--lz':'150px'}}><i/>מאיץ</span>
+              </div>
+              <div className="hu-part hu-motor" style={{'--z0':'-42px','--z1':'-44px','--dl':'.3s'}}>
+                <svg viewBox="0 -14 64 60">
+                  <defs><linearGradient id="huMt" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#2a3246"/><stop offset=".4" stopColor="#7787a8"/><stop offset="1" stopColor="#1f2638"/></linearGradient></defs>
+                  <rect x="10" y="37" width="46" height="8" rx="2" fill="#8b929f"/>
+                  <rect x="0" y="20" width="14" height="5" rx="2" fill="#cfd5df"/>
+                  <path d="M46 8C46 -6 55 -2 55 -13" stroke="#e5c34a" strokeWidth="1.6" fill="none"/><path d="M50 8C50 -4 58 -4 58 -12" stroke="#d94a4a" strokeWidth="1.6" fill="none"/><path d="M54 8C54 -2 61 -2 61 -11" stroke="#1d1f26" strokeWidth="1.6" fill="none"/>
+                  <rect x="12" y="8" width="44" height="30" rx="10" fill="url(#huMt)" stroke="#161c2b" strokeWidth="1.2"/>
+                  <g stroke="#0f1522" strokeOpacity=".5" strokeWidth="1"><path d="M22 10v26M27 9v28M32 9v28M37 9v28M42 10v26"/></g>
+                  <ellipse cx="55" cy="23" rx="4" ry="15" fill="#3a4560" stroke="#161c2b"/>
+                </svg>
+                <span className="hu-lab r br" style={{'--lz':'150px'}}><i/>מנוע מאוורר</span>
+              </div>
+              <div className="hu-part hu-board" style={{'--z0':'-50px','--z1':'64px','--dl':'0s'}}>
+                <svg viewBox="0 0 100 86">
+                  <defs><linearGradient id="huPcb" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#127a58"/><stop offset="1" stopColor="#0b5a43"/></linearGradient></defs>
+                  <rect width="100" height="86" rx="5" fill="url(#huPcb)" stroke="#073d2e" strokeWidth="1.5"/>
+                  <g stroke="#52d9a8" strokeOpacity=".45" strokeWidth=".8" fill="none"><path d="M8 20H38V34H60"/><path d="M8 28H30V46H70"/><path d="M12 60H44V72H88"/><path d="M60 14H90V30"/><path d="M20 78H52"/><path d="M70 40V58H90"/></g>
+                  <g fill="#06281f" stroke="#c9d3df" strokeWidth=".8"><circle cx="6" cy="6" r="2.4"/><circle cx="94" cy="6" r="2.4"/><circle cx="6" cy="80" r="2.4"/><circle cx="94" cy="80" r="2.4"/></g>
+                  <rect x="10" y="10" width="26" height="16" rx="2" fill="#2d62c8" stroke="#1b3f8a" strokeWidth=".8"/><rect x="13" y="13" width="20" height="3" rx="1" fill="#9db9f0" opacity=".6"/>
+                  <rect x="44" y="12" width="20" height="14" rx="1.4" fill="#16181d"/><g stroke="#c4c9d2" strokeWidth="1"><path d="M46 10v2M50 10v2M54 10v2M58 10v2M62 10v2M46 26v2M50 26v2M54 26v2M58 26v2M62 26v2"/></g>
+                  <rect x="10" y="40" width="30" height="24" rx="2" fill="#9a8f7e" stroke="#6b6254" strokeWidth=".8"/><path d="M14 44h22M14 50h22M14 56h22" stroke="#6b6254" strokeWidth=".8"/>
+                  <circle cx="58" cy="52" r="8" fill="#1f3a78"/><circle cx="58" cy="52" r="5.6" fill="#c8cfda"/><path d="M55 49l6 6M61 49l-6 6" stroke="#8892a3" strokeWidth=".8"/>
+                  <circle cx="78" cy="52" r="8" fill="#1f3a78"/><circle cx="78" cy="52" r="5.6" fill="#c8cfda"/><path d="M75 49l6 6M81 49l-6 6" stroke="#8892a3" strokeWidth=".8"/>
+                  <rect x="72" y="12" width="20" height="10" rx="1.5" fill="#f1f3f0"/><g fill="#caa24a"><rect x="75" y="14" width="2" height="6"/><rect x="80" y="14" width="2" height="6"/><rect x="85" y="14" width="2" height="6"/></g>
+                  <rect x="44" y="68" width="46" height="12" rx="1.6" fill="#e9efe7" stroke="#b8c5b6" strokeWidth=".6"/><g fill="#8b95a3"><circle cx="52" cy="74" r="2.4"/><circle cx="61" cy="74" r="2.4"/><circle cx="70" cy="74" r="2.4"/><circle cx="79" cy="74" r="2.4"/></g>
+                  <circle cx="16" cy="72" r="1.8" fill="#4ade80"/><circle cx="22" cy="72" r="1.8" fill="#fbbf24"/>
+                </svg>
+                <span className="hu-lab r tr" style={{'--lz':'60px'}}><i/>כרטיס אלקטרוני</span>
+              </div>
+            </div>
+            {/* ── cover: glass front, lip, chin with discharge flap ── */}
+            <div className="hu-shell">
+              {slices}
+              <div className="hu-glass">
+                <svg className="hu-sw" viewBox="0 0 440 102" preserveAspectRatio="none">
+                  <defs>
+                    <linearGradient id="huBand" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stopColor="#fff" stopOpacity="0"/><stop offset=".3" stopColor="#fff" stopOpacity=".34"/><stop offset=".75" stopColor="#fff" stopOpacity=".26"/><stop offset="1" stopColor="#fff" stopOpacity=".08"/></linearGradient>
+                    <linearGradient id="huShade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#7d80a0" stopOpacity="0"/><stop offset="1" stopColor="#7d80a0" stopOpacity=".16"/></linearGradient>
+                  </defs>
+                  <path d="M0 66 C 110 80, 230 58, 330 40 C 385 30, 420 22, 440 16 L 440 36 C 405 44, 360 54, 300 66 C 205 86, 100 98, 0 90 Z" fill="url(#huBand)"/>
+                  <path d="M0 66 C 110 80, 230 58, 330 40 C 385 30, 420 22, 440 16" fill="none" stroke="#fff" strokeOpacity=".55" strokeWidth="1"/>
+                  <rect x="0" y="52" width="440" height="50" fill="url(#huShade)"/>
+                </svg>
+                <i className="hu-toplip"/>
+                <div className="hu-disp">
+                  <svg viewBox="-13 -1 44 38">
+                    <g className="on">
+                      <g transform="translate(-6.5 11)" stroke="#fff" strokeWidth="1.4" strokeLinecap="round"><path d="M0 -4.2V4.2M-3.6 -2.1L3.6 2.1M-3.6 2.1L3.6 -2.1"/></g>
+                      <rect x="2" y="0" width="8" height="3" rx="1.2"/><rect x="9" y="2" width="3" height="8" rx="1.2"/><rect x="2" y="9.5" width="8" height="3" rx="1.2"/><rect x="0" y="12" width="3" height="8" rx="1.2"/><rect x="2" y="19" width="8" height="3" rx="1.2"/>
+                      <g transform="translate(17 0)"><rect x="0" y="2" width="3" height="8" rx="1.2"/><rect x="2" y="9.5" width="8" height="3" rx="1.2"/><rect x="9" y="2" width="3" height="8" rx="1.2"/><rect x="9" y="12" width="3" height="8" rx="1.2"/></g>
+                      <g transform="translate(14.5 30)" fill="none" stroke="#fff" strokeWidth="1.5" strokeLinecap="round"><path d="M-2.6 -2.3A4 4 0 1 0 2.6 -2.3"/><path d="M0 -4.6V0"/></g>
+                    </g>
+                  </svg>
+                </div>
+                <div className="hu-logo">
+                  <span className="hu-em"><svg width="8" height="8" viewBox="0 0 12 12" fill="none" stroke="#fff" strokeWidth="1.5" strokeLinecap="round"><path d="M2.4 3h7.2M6 3v7M3.4 5.2l2.6 1.3 2.6-1.3"/></svg></span>
+                  <b>TADIRAN</b><u>VRF G</u>
+                </div>
+                <i className="hu-glare"/>
+              </div>
+              <i className="hu-lip"/>
+              <div className="hu-chin"><i className="hu-slotd"/><i className="hu-flap"/></div>
+              <div className="hu-air">{air}</div>
+            </div>
           </div>
-          {/* heat-exchanger coil (copper fins) around the fan */}
-          <div className="hu-layer hu-coil" style={{'--z0':'-6px','--z1':'-60px'}}/>
-          {/* turbo fan */}
-          <div className="hu-layer hu-fan" style={{'--z0':'0px','--z1':'32px'}}>
-            <svg className="hu-blades" viewBox="-50 -50 100 100" width="164" height="164">{blades}<circle r="9" fill="#e7edf7"/><circle r="3.2" fill="#8795b0"/></svg>
-          </div>
-          {/* filter */}
-          <div className="hu-layer hu-filter" style={{'--z0':'6px','--z1':'104px'}}/>
-          {/* decorative panel: 4 outlets, inlet grille, brand */}
-          <div className="hu-layer hu-panel" style={{'--z0':'12px','--z1':'176px'}}>
-            <i className="hu-out o-t"/><i className="hu-out o-b"/><i className="hu-out o-l"/><i className="hu-out o-r"/>
-            <i className="hu-grl"/>
-            <i className="hu-led"/>
-            <span className="hu-brand"><b>TADIRAN</b><u>VRF G</u></span>
-          </div>
-          {streaks}
         </div>
-        <div className="hu-lab hu-lab1"><i/>מנוע מאוורר</div>
-        <div className="hu-lab hu-lab2"><i/>לוח אלקטרוני</div>
-        <div className="hu-lab hu-lab3"><i/>משאבת ניקוז</div>
       </div>
       <div className="hu-hint">{open?'כל חלק במערכת, עם המק"ט שלו':'הציבו עכבר או לחצו כדי לפרק את היחידה'}</div>
     </div>
