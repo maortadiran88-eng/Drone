@@ -24,7 +24,6 @@ function ModelView({brand,cat,model,editor,admin,viewer,hq,data,favorites,onTogg
   const [reviewMode,  setReviewMode]  = useState(false);
   const [pendingOnly, setPendingOnly] = useState(false);
   const [showHiddenParts, setShowHiddenParts] = useState(false);
-  const [tab, setTab] = useState('parts');
   const [partsView, setPartsView] = useState(()=>{
     try{const v=localStorage.getItem('ac_partsview');if(v==='list'||v==='cards')return v;}catch(e){}
     return (viewer||(typeof window!=='undefined'&&window.innerWidth<720))?'cards':'list';
@@ -341,18 +340,8 @@ function ModelView({brand,cat,model,editor,admin,viewer,hq,data,favorites,onTogg
         </div>
       )}
 
-      {/* Tabs: parts / drawings */}
+      {/* Drawings — a rail of thumbnails, right above the parts list (same column) */}
       {(editor||images.length>0) && (
-        <div className="mv-tabs">
-          <Segmented value={tab} onChange={setTab} options={[
-            {v:'parts',label:'חלקים',icon:'clipboard',count:partsBase.length},
-            {v:'drawings',label:'שרטוטים',icon:'ruler',count:images.length}
-          ]}/>
-        </div>
-      )}
-
-      {/* Images / Drawings — gallery with 3D hover + full-screen viewer */}
-      {tab==='drawings' && (editor||images.length>0) && (
         <div className="card-md" style={{padding:'14px 16px',marginBottom:12}}>
           <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:12,flexWrap:'wrap'}}>
             <span className="tc-sub-title"><Ic n="ruler" s={16} style={{display:'inline-block',verticalAlign:'-3px',marginLeft:6}}/>שרטוטים</span>
@@ -389,7 +378,6 @@ function ModelView({brand,cat,model,editor,admin,viewer,hq,data,favorites,onTogg
       )}
 
       {/* Parts */}
-      {tab==='parts' && (
       <div className="card-md" style={{padding:'14px 16px'}}>
 
         {/* Disclaimer */}
@@ -587,7 +575,6 @@ function ModelView({brand,cat,model,editor,admin,viewer,hq,data,favorites,onTogg
         </div>
         )}
       </div>
-      )}
 
       {reviewMode && admin && (() => {
         const reviewCols = ['nameHe','nameEn','mfgPn','tadPn'];

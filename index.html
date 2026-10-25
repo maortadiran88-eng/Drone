@@ -555,6 +555,7 @@ table{border-collapse:separate;border-spacing:0}
 .h2-chip:active{transform:scale(.96)}
 .h2-chip i{width:8px;height:8px;border-radius:50%}
 .h2-stage{position:relative;min-height:440px}
+.home2{overflow-x:clip}
 .sec-h{font-family:var(--disp);font-weight:400;font-size:clamp(22px,2.6vw,30px);letter-spacing:-.01em;margin:0 0 6px}
 .sec-p{margin:0 0 18px;color:var(--sub);font-size:14.5px}
 
@@ -760,7 +761,6 @@ table{border-collapse:separate;border-spacing:0}
 @media (hover:hover) and (pointer:fine){.iv-b:hover,.iv-nav:hover{background:rgba(255,255,255,.22)}.iv-b.close:hover{background:#e53935}.iv-th:hover{opacity:1}}
 
 /* drawings gallery */
-.dg{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;perspective:1200px}
 .dg-card{position:relative;border-radius:20px;overflow:hidden;border:1px solid var(--border);background:var(--card);cursor:zoom-in;
   animation:rowRise .55s var(--ease) both;animation-delay:calc(min(var(--i,0),10) * 50ms);transform-origin:50% 0;
   transition:translate .2s var(--ease),box-shadow .2s var(--ease),border-color .15s ease}
@@ -771,6 +771,7 @@ table{border-collapse:separate;border-spacing:0}
 
 /* ─── Home responsive ─── */
 @media (max-width:900px){
+  .hu-glow{width:min(480px,92vw);height:min(480px,92vw)}
   .h2-hero{grid-template-columns:minmax(0,1fr);padding-top:14px}
   .h2-stage{min-height:0}
   .hu-wrap{height:330px}
@@ -784,6 +785,42 @@ table{border-collapse:separate;border-spacing:0}
   .hu-float,.hu-air i{animation:none}
   .hu,.hu-shell,.hu-flap,.seg-pill{transition:none}
 }
+
+/* ─── Drawings: horizontal rail above the parts list ─── */
+.dg{display:flex;gap:14px;overflow-x:auto;padding:10px 4px 14px;scroll-snap-type:x proximity;perspective:1200px;-webkit-overflow-scrolling:touch}
+.dg-card{flex:0 0 clamp(200px,22vw,250px);scroll-snap-align:start}
+.dg-img{height:170px}
+
+/* ─── Printed catalogs: 3D books ─── */
+.pk-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;max-width:860px;margin:0 auto}
+.pk-card{--bc:#1565c0;--bd:#0a2a63;position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;padding:18px 16px 20px;border-radius:var(--radius-xl);background:var(--card);border:1px solid var(--border);box-shadow:0 1px 2px var(--shadow),0 18px 40px -28px var(--shadow2);text-decoration:none;color:var(--text);
+  animation:rise .55s var(--ease) both;animation-delay:calc(var(--i,0) * 70ms);transition:translate .25s var(--ease),box-shadow .25s var(--ease),border-color .15s ease}
+.pk-stage{position:relative;display:grid;place-items:center;width:100%;height:228px;perspective:900px}
+.pk-stage::after{content:"";position:absolute;left:50%;bottom:14px;width:62%;height:16px;border-radius:50%;background:rgba(8,18,44,.3);filter:blur(10px);translate:-50% 0}
+.pk-book{--bw:150px;--bh:200px;--bt:30px;position:relative;width:var(--bw);height:var(--bh);transform-style:preserve-3d;transform:rotateY(-30deg) rotateX(4deg);transition:transform .7s var(--ease)}
+.pk-cover,.pk-back{position:absolute;inset:0;border-radius:3px 9px 9px 3px}
+.pk-cover{transform:translateZ(calc(var(--bt) / 2));overflow:hidden;background:linear-gradient(150deg,var(--bc),var(--bd));box-shadow:inset 0 0 0 1px rgba(255,255,255,.18),inset 6px 0 10px -4px rgba(0,0,0,.35);display:flex;flex-direction:column;align-items:flex-start;padding:22px 16px 16px 22px;color:#fff;direction:ltr}
+.pk-back{transform:translateZ(calc(var(--bt) / -2));background:var(--bd)}
+.pk-spine{position:absolute;top:0;left:calc(50% - var(--bt) / 2);width:var(--bt);height:var(--bh);transform:rotateY(-90deg) translateZ(calc(var(--bw) / 2));background:linear-gradient(90deg,var(--bd),color-mix(in srgb,var(--bd) 70%,#000));border-radius:3px 0 0 3px}
+.pk-pages{position:absolute;top:4px;left:calc(50% - var(--bt) / 2 + 2px);width:calc(var(--bt) - 4px);height:calc(var(--bh) - 8px);transform:rotateY(90deg) translateZ(calc(var(--bw) / 2 - 2px));background:repeating-linear-gradient(90deg,#f4f4f1 0 2px,#d8d8d2 2px 3px)}
+.pk-l1{font-weight:700;font-size:12px;letter-spacing:.3em;opacity:.95}
+.pk-l2{font-family:'Heebo',sans-serif;font-weight:800;font-size:33px;line-height:1;letter-spacing:-.02em;margin-top:8px;white-space:nowrap}
+.pk-lines{display:flex;flex-direction:column;gap:5px;margin-top:20px;width:46px}
+.pk-lines i{display:block;height:2px;border-radius:2px;background:rgba(255,255,255,.55)}
+.pk-lines i:nth-child(2){width:70%}.pk-lines i:nth-child(3){width:40%}
+.pk-tag{margin-top:auto;font-size:9.5px;font-weight:700;letter-spacing:.34em;opacity:.85}
+.pk-gl{position:absolute;inset:0;pointer-events:none;background:linear-gradient(115deg,rgba(255,255,255,.28),transparent 42%)}
+.pk-title{font-family:var(--disp);font-size:21px;line-height:1.2;margin-top:4px}
+.pk-sub{font-size:13px;color:var(--sub)}
+.pk-go{position:absolute;top:16px;inset-inline-end:16px;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--border2);color:var(--sub);transition:transform .2s var(--ease),background-color .15s ease,color .15s ease,border-color .15s ease}
+@media (hover:hover) and (pointer:fine){
+  .pk-card:hover{translate:0 -5px;box-shadow:0 1px 2px var(--shadow),0 30px 54px -28px var(--shadow2);border-color:var(--bc)}
+  .pk-card:hover .pk-book{transform:rotateY(-10deg) rotateX(2deg) translateZ(18px)}
+  .pk-card:hover .pk-go{background:var(--bc);color:#fff;border-color:transparent;transform:translateX(-4px)}
+}
+.pk-card:focus-visible{outline:2px solid var(--cyan);outline-offset:3px}
+@media (max-width:640px){.pk-stage{height:205px}.pk-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.pk-grid .pk-card:last-child{grid-column:span 2}.pk-go{display:none}.pk-title{font-size:17px;white-space:nowrap}.pk-card{padding:14px 10px 16px}}
+@media (prefers-reduced-motion:reduce){.pk-card{animation:none}.pk-book{transition:none}}
 
 /* ─── Reduced motion ─── */
 @media (prefers-reduced-motion:reduce){
@@ -818,16 +855,16 @@ table{border-collapse:separate;border-spacing:0}
   });
 </script>
 
-<script type="text/babel" data-presets="my-react-env" src="js/icons.js?v=2026101305"></script>
-<script type="text/babel" data-presets="my-react-env" src="js/constants.js?v=2026101305"></script>
-<script type="text/babel" data-presets="my-react-env" src="js/firebase.js?v=2026101305"></script>
-<script type="text/babel" data-presets="my-react-env" src="js/helpers.js?v=2026101305"></script>
-<script type="text/babel" data-presets="my-react-env" src="js/v2.js?v=2026101305"></script>
-<script type="text/babel" data-presets="my-react-env" src="js/components.js?v=2026101305"></script>
-<script type="text/babel" data-presets="my-react-env" src="js/modals.js?v=2026101305"></script>
-<script type="text/babel" data-presets="my-react-env" src="js/ModelView.js?v=2026101305"></script>
-<script type="text/babel" data-presets="my-react-env" src="js/compare.js?v=2026101305"></script>
-<script type="text/babel" data-presets="my-react-env" src="js/makat_review.js?v=2026101305"></script>
-<script type="text/babel" data-presets="my-react-env" src="js/App.js?v=2026101305"></script>
+<script type="text/babel" data-presets="my-react-env" src="js/icons.js?v=2026101306"></script>
+<script type="text/babel" data-presets="my-react-env" src="js/constants.js?v=2026101306"></script>
+<script type="text/babel" data-presets="my-react-env" src="js/firebase.js?v=2026101306"></script>
+<script type="text/babel" data-presets="my-react-env" src="js/helpers.js?v=2026101306"></script>
+<script type="text/babel" data-presets="my-react-env" src="js/v2.js?v=2026101306"></script>
+<script type="text/babel" data-presets="my-react-env" src="js/components.js?v=2026101306"></script>
+<script type="text/babel" data-presets="my-react-env" src="js/modals.js?v=2026101306"></script>
+<script type="text/babel" data-presets="my-react-env" src="js/ModelView.js?v=2026101306"></script>
+<script type="text/babel" data-presets="my-react-env" src="js/compare.js?v=2026101306"></script>
+<script type="text/babel" data-presets="my-react-env" src="js/makat_review.js?v=2026101306"></script>
+<script type="text/babel" data-presets="my-react-env" src="js/App.js?v=2026101306"></script>
 </body>
 </html>

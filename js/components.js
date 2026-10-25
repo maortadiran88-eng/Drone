@@ -211,6 +211,13 @@ function HomeScreen({data,onNav,recent,favorites,onToggleFav,loginRole,reports,t
         </div>
       </Reveal>
 
+      {/* ── PRINTED CATALOGS ── */}
+      <Reveal style={{marginBottom:40}}>
+        <h2 className="sec-h" style={{textAlign:'center'}}>הקטלוג המודפס</h2>
+        <p className="sec-p" style={{textAlign:'center'}}>דפדוף בקטלוג המלא של כל מותג. נפתח בלשונית חדשה</p>
+        <PrintedCatalogs/>
+      </Reveal>
+
       {/* ── HOW IT WORKS ── */}
       <Reveal style={{marginBottom:40}}>
         <h2 className="sec-h">איך זה עובד</h2>

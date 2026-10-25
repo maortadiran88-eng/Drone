@@ -148,6 +148,42 @@ function HeroUnit3D(){
   );
 }
 
+// ══════════ PRINTED CATALOGS — three 3D books that open the flip-book catalogs ══════════
+const PRINTED_CATALOGS = [
+  {id:'g', l1:'TADIRAN', l2:'VRF G', title:'TADIRAN VRF G', url:'https://anyflip.com/uzme/vikq/',                                  c:'#1565c0', d:'#0a2a63'},
+  {id:'t', l1:'TOSHIBA', l2:'VRF',   title:'TOSHIBA VRF',   url:'https://anyflip.com/uzme/tjdl/',                                  c:'#d32f2f', d:'#7f1818'},
+  {id:'p', l1:'PRIME',   l2:'VRF',   title:'PRIME VRF',     url:'https://online.anyflip.com/uzme/gpsj/mobile/index.html',          c:'#2e7d32', d:'#14471a'},
+];
+function PrintedCatalogs(){
+  return(
+    <div className="pk-grid">
+      {PRINTED_CATALOGS.map((k,i)=>(
+        <a key={k.id} className="pk-card" href={k.url} target="_blank" rel="noopener noreferrer"
+          aria-label={'פתח את הקטלוג המודפס של '+k.title+' (נפתח בלשונית חדשה)'}
+          style={{'--bc':k.c,'--bd':k.d,'--i':i}}>
+          <span className="pk-stage" aria-hidden="true">
+            <span className="pk-book">
+              <span className="pk-back"/>
+              <span className="pk-pages"/>
+              <span className="pk-spine"/>
+              <span className="pk-cover">
+                <span className="pk-l1">{k.l1}</span>
+                <span className="pk-l2">{k.l2}</span>
+                <span className="pk-lines"><i/><i/><i/></span>
+                <span className="pk-tag">CATALOG</span>
+                <span className="pk-gl"/>
+              </span>
+            </span>
+          </span>
+          <span className="pk-title">{k.title}</span>
+          <span className="pk-sub">קטלוג מודפס</span>
+          <span className="pk-go"><Ic n="arrow" s={17}/></span>
+        </a>
+      ))}
+    </div>
+  );
+}
+
 // ══════════ HOW IT WORKS — three steps, easy to grasp ══════════
 function HowItWorks(){
   const steps = [
