@@ -118,6 +118,47 @@ function CopyPartsModal({data,currentMid,onCopy,onClose}){
   );
 }
 
+// ══════════ COPY SELECTED PARTS TO ANOTHER MODEL ══════════
+function CopySelectedModal({data,count,currentMid,onCopy,onClose}){
+  const[picked,setPicked]=useState(null);
+  const[skipDup,setSkipDup]=useState(true);
+  const[q,setQ]=useState('');
+  const opts=[];
+  data.brands.forEach(b=>b.categories.forEach(c=>{
+    c.models.forEach(m=>{if(m.id!==currentMid)opts.push({b,c,m,sc:null});});
+    (c.subCategories||[]).forEach(sc=>(sc.models||[]).forEach(m=>{if(m.id!==currentMid)opts.push({b,c,m,sc});}));
+  }));
+  const shown=opts.filter(o=>!q.trim()||(o.m.name+' '+o.b.name+' '+o.c.name+' '+(o.sc?o.sc.name:'')).toLowerCase().includes(q.trim().toLowerCase()));
+  return(
+    <Modal onClose={onClose} title="העתק חלקים נבחרים לדגם אחר" wide>
+      <div style={{background:'var(--primary-light)',color:'var(--primary)',borderRadius:12,padding:'10px 14px',marginBottom:12,fontSize:13.5,fontWeight:600}}>
+        {count} חלקים שסימנת יועתקו לדגם שתבחר. החלקים בדגם הנוכחי לא ישתנו.
+      </div>
+      <input value={q} onChange={e=>setQ(e.target.value)} placeholder="חפש דגם..." style={{...INS,marginBottom:10}}/>
+      <div style={{maxHeight:'42vh',overflowY:'auto',marginBottom:12}}>
+        {!shown.length&&<div style={{textAlign:'center',color:'var(--sub)',padding:24}}>לא נמצאו דגמים</div>}
+        {shown.map(({b,c,m,sc})=>(
+          <div key={m.id} onClick={()=>setPicked({b,c,m})} style={{padding:'10px 14px',borderRadius:12,border:`2px solid ${picked?.m.id===m.id?b.color:'var(--border)'}`,marginBottom:6,cursor:'pointer',background:picked?.m.id===m.id?b.light:'var(--ibg)',display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
+            <span style={{background:b.color,color:'#fff',padding:'2px 8px',borderRadius:6,fontSize:11,fontWeight:'bold'}}>{b.name}</span>
+            <span style={{fontWeight:'bold',color:'var(--text)',flex:1}}>{m.name}</span>
+            <span style={{color:'var(--sub)',fontSize:11}}>{c.name}{sc?' › '+sc.name:''}</span>
+            <span style={{color:b.color,fontSize:11,fontWeight:'bold'}}>{m.parts.length} חלקים</span>
+          </div>
+        ))}
+      </div>
+      <label style={{display:'flex',alignItems:'center',gap:8,fontSize:13,color:'var(--text2)',marginBottom:12,cursor:'pointer'}}>
+        <input type="checkbox" checked={skipDup} onChange={e=>setSkipDup(e.target.checked)} style={{width:16,height:16}}/>
+        דלג על חלקים שכבר קיימים בדגם היעד (לפי מק"ט תדיראן, או לפי השם אם אין מק"ט)
+      </label>
+      {picked&&<div style={{background:'var(--green-bg)',borderRadius:12,padding:'10px 14px',marginBottom:12,fontSize:13,color:'var(--green)'}}>✓ היעד: <strong>{picked.m.name}</strong> ({picked.b.name})</div>}
+      <div style={{display:'flex',gap:8}}>
+        <button onClick={()=>{if(!picked){alert('בחר דגם יעד');return;}onCopy(picked.b.id,picked.c.id,picked.m.id,skipDup);onClose();}} style={{flex:1,...BPr('var(--green)')}}>העתק</button>
+        <button onClick={onClose} style={{flex:1,...BST}}>ביטול</button>
+      </div>
+    </Modal>
+  );
+}
+
 // ══════════ BULK MOVE ══════════
 function BulkMoveModal({data,onMove,onClose}){
   const[sel,setSel]=useState(new Set());const[toBid,setToBid]=useState('');const[toCid,setToCid]=useState('');const[q,setQ]=useState('');

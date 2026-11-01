@@ -793,8 +793,9 @@ table{border-collapse:separate;border-spacing:0}
 
 /* ─── Printed catalogs: 3D books ─── */
 .pk-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;max-width:860px;margin:0 auto}
-.pk-card{--bc:#1565c0;--bd:#0a2a63;position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;padding:18px 16px 20px;border-radius:var(--radius-xl);background:var(--card);border:1px solid var(--border);box-shadow:0 1px 2px var(--shadow),0 18px 40px -28px var(--shadow2);text-decoration:none;color:var(--text);
+.pk-card{--bc:#1565c0;--bd:#0a2a63;position:relative;display:flex;flex-direction:column;align-items:stretch;padding:0;border-radius:var(--radius-xl);background:var(--card);border:1px solid var(--border);box-shadow:0 1px 2px var(--shadow),0 18px 40px -28px var(--shadow2);color:var(--text);
   animation:rise .55s var(--ease) both;animation-delay:calc(var(--i,0) * 70ms);transition:translate .25s var(--ease),box-shadow .25s var(--ease),border-color .15s ease}
+.pk-main{position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;padding:18px 16px 8px;text-decoration:none;color:inherit;border-radius:var(--radius-xl) var(--radius-xl) 0 0}
 .pk-stage{position:relative;display:grid;place-items:center;width:100%;height:228px;perspective:900px}
 .pk-stage::after{content:"";position:absolute;left:50%;bottom:14px;width:62%;height:16px;border-radius:50%;background:rgba(8,18,44,.3);filter:blur(10px);translate:-50% 0}
 .pk-book{--bw:150px;--bh:200px;--bt:30px;position:relative;width:var(--bw);height:var(--bh);transform-style:preserve-3d;transform:rotateY(-30deg) rotateX(4deg);transition:transform .7s var(--ease)}
@@ -818,9 +819,31 @@ table{border-collapse:separate;border-spacing:0}
   .pk-card:hover .pk-book{transform:rotateY(-10deg) rotateX(2deg) translateZ(18px)}
   .pk-card:hover .pk-go{background:var(--bc);color:#fff;border-color:transparent;transform:translateX(-4px)}
 }
-.pk-card:focus-visible{outline:2px solid var(--cyan);outline-offset:3px}
-@media (max-width:640px){.pk-stage{height:205px}.pk-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.pk-grid .pk-card:last-child{grid-column:span 2}.pk-go{display:none}.pk-title{font-size:17px;white-space:nowrap}.pk-card{padding:14px 10px 16px}}
+.pk-main:focus-visible{outline:2px solid var(--cyan);outline-offset:3px}
+
+.pk-wa{display:flex;align-items:center;justify-content:center;gap:8px;margin:0 16px 16px;height:44px;border-radius:999px;background:#25d366;color:#fff;font-weight:700;font-size:14px;text-decoration:none;transition:transform .14s var(--ease),background-color .15s ease,box-shadow .2s ease;box-shadow:0 10px 22px -12px rgba(37,211,102,.7)}
+.pk-wa:active{transform:scale(.97)}
+.pk-wa:focus-visible{outline:2px solid var(--cyan);outline-offset:3px}
+@media (hover:hover) and (pointer:fine){.pk-wa:hover{background:#1fbd5a;box-shadow:0 14px 26px -12px rgba(37,211,102,.85)}}
+@media (max-width:640px){.pk-stage{height:205px}.pk-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.pk-grid .pk-card:last-child{grid-column:span 2}.pk-go{display:none}.pk-title{font-size:17px;white-space:nowrap}.pk-main{padding:14px 10px 6px}.pk-wa{margin:0 10px 12px;font-size:13px}.pk-wa span{white-space:nowrap}}
 @media (prefers-reduced-motion:reduce){.pk-card{animation:none}.pk-book{transition:none}}
+
+/* ─── Save badge + error banner ─── */
+.sv{display:inline-flex;align-items:center;gap:7px;height:34px;padding:0 12px;border-radius:999px;border:1px solid transparent;font-family:inherit;font-size:12.5px;font-weight:700;white-space:nowrap;flex-shrink:0;transition:background-color .2s ease,color .2s ease,border-color .2s ease}
+.sv-ok{color:var(--green);background:var(--green-bg)}
+.sv-warn{color:var(--orange);background:var(--orange-bg)}
+.sv-busy{color:var(--primary);background:var(--primary-light)}
+.sv-err{color:#fff;background:var(--red);animation:svPulse 1.6s ease-in-out infinite}
+.sv-ic{display:flex}
+.sv-spin{width:15px;height:15px;border-radius:50%;border:2px solid currentColor;border-top-color:transparent;animation:spin .8s linear infinite}
+@keyframes svPulse{0%,100%{box-shadow:0 0 0 0 rgba(229,57,53,.45)}50%{box-shadow:0 0 0 6px rgba(229,57,53,0)}}
+@media(max-width:520px){.sv{padding:0 9px}.sv-ok .sv-l,.sv-warn .sv-l,.sv-busy .sv-l{display:none}}
+.save-banner{display:flex;align-items:center;gap:12px;padding:10px 16px;background:var(--red-bg);color:var(--red);border-bottom:1px solid var(--red)}
+.save-banner .sb-txt{display:flex;flex-direction:column;flex:1;min-width:0;font-size:13px;line-height:1.4}
+.save-banner b{font-weight:800}
+.save-banner span{color:var(--text2)}
+.save-banner button{height:36px;padding:0 16px;border:0;border-radius:999px;background:var(--red);color:#fff;font-family:inherit;font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap}
+@media (prefers-reduced-motion:reduce){.sv-err{animation:none}.sv-spin{animation-duration:2s}}
 
 /* ─── Reduced motion ─── */
 @media (prefers-reduced-motion:reduce){
@@ -855,16 +878,17 @@ table{border-collapse:separate;border-spacing:0}
   });
 </script>
 
-<script type="text/babel" data-presets="my-react-env" src="js/icons.js?v=2026101306"></script>
-<script type="text/babel" data-presets="my-react-env" src="js/constants.js?v=2026101306"></script>
-<script type="text/babel" data-presets="my-react-env" src="js/firebase.js?v=2026101306"></script>
-<script type="text/babel" data-presets="my-react-env" src="js/helpers.js?v=2026101306"></script>
-<script type="text/babel" data-presets="my-react-env" src="js/v2.js?v=2026101306"></script>
-<script type="text/babel" data-presets="my-react-env" src="js/components.js?v=2026101306"></script>
-<script type="text/babel" data-presets="my-react-env" src="js/modals.js?v=2026101306"></script>
-<script type="text/babel" data-presets="my-react-env" src="js/ModelView.js?v=2026101306"></script>
-<script type="text/babel" data-presets="my-react-env" src="js/compare.js?v=2026101306"></script>
-<script type="text/babel" data-presets="my-react-env" src="js/makat_review.js?v=2026101306"></script>
-<script type="text/babel" data-presets="my-react-env" src="js/App.js?v=2026101306"></script>
+<script type="text/babel" data-presets="my-react-env" src="js/icons.js?v=2026102502"></script>
+<script type="text/babel" data-presets="my-react-env" src="js/constants.js?v=2026102502"></script>
+<script type="text/babel" data-presets="my-react-env" src="js/sync.js?v=2026102502"></script>
+<script type="text/babel" data-presets="my-react-env" src="js/firebase.js?v=2026102502"></script>
+<script type="text/babel" data-presets="my-react-env" src="js/helpers.js?v=2026102502"></script>
+<script type="text/babel" data-presets="my-react-env" src="js/v2.js?v=2026102502"></script>
+<script type="text/babel" data-presets="my-react-env" src="js/components.js?v=2026102502"></script>
+<script type="text/babel" data-presets="my-react-env" src="js/modals.js?v=2026102502"></script>
+<script type="text/babel" data-presets="my-react-env" src="js/ModelView.js?v=2026102502"></script>
+<script type="text/babel" data-presets="my-react-env" src="js/compare.js?v=2026102502"></script>
+<script type="text/babel" data-presets="my-react-env" src="js/makat_review.js?v=2026102502"></script>
+<script type="text/babel" data-presets="my-react-env" src="js/App.js?v=2026102502"></script>
 </body>
 </html>

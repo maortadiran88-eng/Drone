@@ -1,6 +1,6 @@
 function ModelView({brand,cat,model,editor,admin,viewer,hq,data,favorites,onToggleFav,loginRole,
   onUpdate,onRenameModel,onAddPart,onDelPart,onCell,onColName,onMoveCol,onAddCol,onDelCol,onPaste,
-  onImgUpload,onDelImg,onImgUrl,onOpenImg,onMove,onDuplicate,onCopyPartsFrom,
+  onImgUpload,onDelImg,onImgUrl,onOpenImg,onMove,onDuplicate,onCopyPartsFrom,onCopySelectedTo,
   onAddToCart,onReport,waDefaults,partsDisclaimer,onUpdateDisclaimer,
   reviewApprovals,onReviewApprovalsChange,onOpenCompare,onOpenCart,compareCount,cartCount}) {
 
@@ -15,6 +15,7 @@ function ModelView({brand,cat,model,editor,admin,viewer,hq,data,favorites,onTogg
   const [pasteText,   setPasteText]   = useState('');
   const [showMove,    setShowMove]    = useState(false);
   const [showCopy,    setShowCopy]    = useState(false);
+  const [showCopySel, setShowCopySel] = useState(false);
   const [selRows,     setSelRows]     = useState(new Set());
   const [showWaEditor,setShowWaEditor]= useState(false);
   const [showReport,  setShowReport]  = useState(false);
@@ -301,6 +302,9 @@ function ModelView({brand,cat,model,editor,admin,viewer,hq,data,favorites,onTogg
               <button onClick={()=>setShowCopy(true)} className="tool-btn tt" data-tt="העתק חלקים מדגם אחר לתוך זה">
                 <span className="ic ic-clipboard"><Ic n="clipboard" s={17}/></span><span className="lbl">העתק חלקים</span>
               </button>
+              {onCopySelectedTo&&<button onClick={()=>{if(!selRows.size){alert('סמן קודם את החלקים שברצונך להעתיק (לחיצה על שורה או על כרטיס).');return;}setShowCopySel(true);}} className="tool-btn tt" data-tt="העתק רק את החלקים שסימנת לדגם אחר">
+                <span className="ic ic-share"><Ic n="export" s={17}/></span><span className="lbl">העתק נבחרים לדגם אחר</span>{selRows.size>0&&<span className="cnt">{selRows.size}</span>}
+              </button>}
               <button onClick={()=>onUpdate({hidden:!model.hidden})}
                 className={'tool-btn tt'+(model.hidden?' active':'')}
                 data-tt={model.hidden?'הדגם מוסתר מצופים — לחץ כדי להציג':'הצג את הדגם לצופים'}>
@@ -421,6 +425,8 @@ function ModelView({brand,cat,model,editor,admin,viewer,hq,data,favorites,onTogg
             <button onClick={()=>setShowWaEditor(true)} style={{background:'#fff',border:'none',borderRadius:8,padding:'7px 16px',cursor:'pointer',fontWeight:700,color:'#25D366',fontSize:13}}>✏️ ערוך ושלח</button>
             <button onClick={()=>{selRows.forEach(pid=>onAddToCart(brand.id,cat.id,model.id,pid));clearRows();alert(`✅ ${selRows.size} פריטים נוספו לסל`);}}
               style={{background:'rgba(255,255,255,.25)',border:'none',borderRadius:8,padding:'7px 14px',cursor:'pointer',color:'#fff',fontSize:12}}>+ סל</button>
+            {editor&&onCopySelectedTo&&<button onClick={()=>setShowCopySel(true)}
+              style={{background:'rgba(255,255,255,.25)',border:'none',borderRadius:8,padding:'7px 14px',cursor:'pointer',color:'#fff',fontSize:12}}>העתק לדגם אחר</button>}
             <button onClick={clearRows} style={{background:'rgba(255,255,255,.25)',border:'none',borderRadius:8,padding:'7px 12px',cursor:'pointer',color:'#fff',fontSize:12}}>ביטול</button>
           </div>
         )}
@@ -710,6 +716,7 @@ function ModelView({brand,cat,model,editor,admin,viewer,hq,data,favorites,onTogg
 
       {showMove     && <MoveModal      data={data} currentBid={brand.id} currentCid={cat.id} onMove={onMove} onClose={()=>setShowMove(false)}/>}
       {showCopy     && <CopyPartsModal data={data} currentMid={model.id} onCopy={onCopyPartsFrom} onClose={()=>setShowCopy(false)}/>}
+      {showCopySel  && <CopySelectedModal data={data} count={selRows.size} currentMid={model.id} onCopy={(tb,tc,tm,skip)=>{onCopySelectedTo(tb,tc,tm,model.parts.filter(p=>selRows.has(p.id)),model.columns,skip);clearRows();}} onClose={()=>setShowCopySel(false)}/>}
       {showWaEditor && <WaEditorModal  brand={brand} cat={cat} model={model} selRows={selRows} defaultCols={waDefaults} onClose={()=>setShowWaEditor(false)}/>}
     </div>
   );

@@ -155,32 +155,55 @@ const PRINTED_CATALOGS = [
   {id:'p', l1:'PRIME',   l2:'VRF',   title:'PRIME VRF',     url:'https://online.anyflip.com/uzme/gpsj/mobile/index.html',          c:'#2e7d32', d:'#14471a'},
 ];
 function PrintedCatalogs(){
+  // "send via WhatsApp": opens WhatsApp's chooser so you pick who gets the link
+  const waLink = k => 'https://wa.me/?text='+encodeURIComponent('קטלוג מודפס '+k.title+':\n'+k.url);
   return(
     <div className="pk-grid">
       {PRINTED_CATALOGS.map((k,i)=>(
-        <a key={k.id} className="pk-card" href={k.url} target="_blank" rel="noopener noreferrer"
-          aria-label={'פתח את הקטלוג המודפס של '+k.title+' (נפתח בלשונית חדשה)'}
-          style={{'--bc':k.c,'--bd':k.d,'--i':i}}>
-          <span className="pk-stage" aria-hidden="true">
-            <span className="pk-book">
-              <span className="pk-back"/>
-              <span className="pk-pages"/>
-              <span className="pk-spine"/>
-              <span className="pk-cover">
-                <span className="pk-l1">{k.l1}</span>
-                <span className="pk-l2">{k.l2}</span>
-                <span className="pk-lines"><i/><i/><i/></span>
-                <span className="pk-tag">CATALOG</span>
-                <span className="pk-gl"/>
+        <div key={k.id} className="pk-card" style={{'--bc':k.c,'--bd':k.d,'--i':i}}>
+          <a className="pk-main" href={k.url} target="_blank" rel="noopener noreferrer"
+            aria-label={'פתח את הקטלוג המודפס של '+k.title+' (נפתח בלשונית חדשה)'}>
+            <span className="pk-stage" aria-hidden="true">
+              <span className="pk-book">
+                <span className="pk-back"/>
+                <span className="pk-pages"/>
+                <span className="pk-spine"/>
+                <span className="pk-cover">
+                  <span className="pk-l1">{k.l1}</span>
+                  <span className="pk-l2">{k.l2}</span>
+                  <span className="pk-lines"><i/><i/><i/></span>
+                  <span className="pk-tag">CATALOG</span>
+                  <span className="pk-gl"/>
+                </span>
               </span>
             </span>
-          </span>
-          <span className="pk-title">{k.title}</span>
-          <span className="pk-sub">קטלוג מודפס</span>
-          <span className="pk-go"><Ic n="arrow" s={17}/></span>
-        </a>
+            <span className="pk-title">{k.title}</span>
+            <span className="pk-sub">קטלוג מודפס</span>
+            <span className="pk-go"><Ic n="arrow" s={17}/></span>
+          </a>
+          <a className="pk-wa tt" data-tt="שלח את הקישור לקטלוג בווצאפ, ותבחר למי" href={waLink(k)} target="_blank" rel="noopener noreferrer"
+            aria-label={'שלח את הקישור לקטלוג '+k.title+' בווצאפ'}>
+            <Ic n="whatsapp" s={18}/><span>שלח בווצאפ</span>
+          </a>
+        </div>
       ))}
     </div>
+  );
+}
+
+// ══════════ SAVE BADGE — always shows whether the latest changes are on the server ══════════
+function SaveBadge({status,savedAt,err,onRetry}){
+  const t = savedAt ? savedAt.toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'}) : '';
+  let kind='ok', icon='checkc', label=savedAt?('נשמר '+t):'הכול שמור', tip='כל השינויים נשמרו בשרת';
+  if (status==='dirty')  { kind='warn'; icon='clock';  label='ממתין לשמירה'; tip='יש שינויים חדשים. הם נשמרים אוטומטית בעוד רגע'; }
+  if (status==='saving') { kind='busy'; icon='save';   label='שומר...';      tip='שומר את השינויים בשרת'; }
+  if (status==='error')  { kind='err';  icon='warn';   label='לא נשמר';      tip=(err||'שגיאת שמירה')+' (לחץ לניסיון חוזר)'; }
+  return(
+    <button type="button" className={'sv sv-'+kind+' tt tt-hdr tt-l'} data-tt={tip} aria-live="polite"
+      onClick={status==='error'?onRetry:undefined} style={{cursor:status==='error'?'pointer':'default'}}>
+      <span className="sv-ic">{kind==='busy'?<span className="sv-spin"/>:<Ic n={icon} s={16} sw={kind==='ok'?2:1.8}/>}</span>
+      <span className="sv-l">{label}</span>
+    </button>
   );
 }
 

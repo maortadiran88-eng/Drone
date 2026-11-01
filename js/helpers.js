@@ -16,7 +16,39 @@ async function compressImg(file) {
   });
 }
 
-const updBrands=(brands,bid,cid,mid,fn)=>brands.map(b=>b.id!==bid?b:{...b,categories:b.categories.map(c=>c.id!==cid?c:{...c,models:c.models.map(m=>m.id!==mid?m:fn(m))})});
+const updBrands=(brands,bid,cid,mid,fn)=>brands.map(b=>b.id!==bid?b:{...b,categories:b.categories.map(c=>{
+  if(c.id!==cid)return c;
+  const cc={...c,models:c.models.map(m=>m.id!==mid?m:fn(m))};
+  // models that live inside a sub-category used to be skipped here — so edits to them never reached the state
+  if(c.subCategories)cc.subCategories=c.subCategories.map(sc=>({...sc,models:(sc.models||[]).map(m=>m.id!==mid?m:fn(m))}));
+  return cc;
+})});
+
+
+// Copy parts into a model. Columns are matched by id, then by name; columns the target lacks are added so no value is lost.
+// With skipDup, parts whose מק"ט תדיראן (or Hebrew name when there is no מק"ט) already exist in the target are skipped.
+function copyPartsInto(m, parts, srcCols, skipDup, newId){
+  const cols=[...m.columns], map={};
+  srcCols.forEach(sc=>{
+    let t=cols.find(c=>c.id===sc.id)||cols.find(c=>c.name===sc.name);
+    if(!t){t={...sc};cols.push(t);}
+    map[sc.id]=t.id;
+  });
+  const tadCol=cols.find(c=>c.id==='tadPn')||cols.find(c=>(c.name||'').includes('תדיראן'));
+  const heCol=cols.find(c=>c.id==='nameHe');
+  const keyOf=p=>{const t=tadCol?(p.values[tadCol.id]||'').trim():'';return t?'t:'+t.toLowerCase():(heCol?'h:'+(p.values[heCol.id]||'').trim().toLowerCase():'');};
+  const have=new Set(m.parts.map(keyOf).filter(Boolean));
+  const add=[];let skipped=0;
+  parts.forEach(p=>{
+    const values=Object.fromEntries(Object.entries(p.values||{}).map(([k,v])=>[map[k]||k,v]));
+    const np={...JSON.parse(JSON.stringify(p)),id:newId(),values};
+    const k=keyOf(np);
+    if(skipDup&&k&&have.has(k)){skipped++;return;}
+    if(k)have.add(k);
+    add.push(np);
+  });
+  return {model:{...m,columns:cols,parts:[...m.parts,...add]},n:add.length,skipped};
+}
 
 function fuzzyMatch(q,text){
   // Exact match only — no typo tolerance

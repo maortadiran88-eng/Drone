@@ -5,6 +5,8 @@ function App() {
   const [loaded,         setLoaded]         = useState(false);
   const [saving,         setSaving]         = useState('');
   const [saveErr,        setSaveErr]        = useState('');
+  const [savedAt,        setSavedAt]        = useState(null);
+  const [loadErr,        setLoadErr]        = useState(false);
   const [loginRole,      setLoginRole]      = useState(null);
   const [loginLabel,     setLoginLabel]     = useState('');
   const [sel,            setSel]            = useState(null);
@@ -75,6 +77,10 @@ function App() {
   const saveAgain    = useRef(false);
   const latestData   = useRef(null);
   const retryTimer   = useRef(null);
+  const dirtyRef     = useRef(false);   // true while there are changes that are not on the server yet
+  const savePromise  = useRef(null);
+  const adoptedData  = useRef(null);    // data we just replaced with other editors' changes (not a local edit)
+  const runSaveRef   = useRef(null);
 
   const admin  = loginRole==='admin';
   const editor = loginRole==='editor' || loginRole==='admin';
@@ -84,7 +90,7 @@ function App() {
   useEffect(() => { const t=setInterval(()=>setNow(new Date()),1000); return()=>clearInterval(t); }, []);
 
   useEffect(() => {
-    fbLoad().then(d => { setData(d||INIT()); setLoaded(true); }).catch(() => { setData(INIT()); setLoaded(true); });
+    fbLoad().then(d => { setData(d||INIT()); setLoaded(true); }).catch(() => { setLoadErr(true); setData(INIT()); setLoaded(true); });
     fbGetNews().then(docs => setNewsItems(docs.map(d=>d.text)));
     fbGetBroadcast().then(b => { if(b&&b.active) setBroadcast(b.msg); });
   }, []);
@@ -105,45 +111,71 @@ function App() {
   // stream — that pile-up is what ends in "resource-exhausted: Write stream
   // exhausted maximum allowed queued writes".
   const withTimeout = (p, ms) => Promise.race([p, new Promise((_,rej) => setTimeout(() => {
-    const err = new Error('Firebase לא אישר את השמירה תוך '+Math.round(ms/1000)+' שניות (עומס/חסימה בצד השרת). אל תרענן עדיין — השינויים עדיין בזיכרון. לחץ אישור כדי לנסות שוב.');
-    err.nonRetryable = true; rej(err);
+    rej(new Error('Firebase לא אישר את השמירה תוך '+Math.round(ms/1000)+' שניות. השינויים שמורים בזיכרון, והמערכת תנסה שוב אוטומטית. אל תרענן את הדף.'));
   }, ms))]);
-  const runSave = async () => {
-    if (saveInFlight.current) { saveAgain.current = true; return; }
+  const runSave = () => {
+    if (saveInFlight.current) { saveAgain.current = true; return savePromise.current; }
     saveInFlight.current = true;
-    try {
-      do {
-        saveAgain.current = false;
-        setSaving('saving');
-        const snap = latestData.current;
-        // Capture + clear BEFORE awaiting — edits made mid-save go to a fresh Set
-        const midsToSave = changedMids.current;
-        changedMids.current = new Set();
-        try {
-          await withTimeout(fbSave(snap, midsToSave), 60000);
-          saveCount.current++;
-          if (saveCount.current % 5 === 0) fbSaveSnapshot(snap, loginLabel||loginRole||'system', 'שמירה אוטומטית');
-          clearTimeout(retryTimer.current);
-          setSaving('saved'); setSaveErr('');
-          setTimeout(() => setSaving(s => s==='saved' ? '' : s), 3000);
-        } catch(e) {
-          // Put the ids back so the next save retries them instead of losing them
-          midsToSave.forEach(id => changedMids.current.add(id));
-          setSaving('error'); setSaveErr(e.message||String(e));
-          if (!e.nonRetryable) { clearTimeout(retryTimer.current); retryTimer.current = setTimeout(runSave, 20000); }
-          break;
-        }
-      } while (saveAgain.current);
-    } finally { saveInFlight.current = false; }
+    savePromise.current = (async () => {
+      try {
+        do {
+          saveAgain.current = false;
+          setSaving('saving');
+          const snap = latestData.current;
+          // Capture + clear BEFORE awaiting — edits made mid-save go to a fresh Set
+          const midsToSave = changedMids.current;
+          changedMids.current = new Set();
+          try {
+            // merge-save in transactions (see sync.js / firebase.js): two editors saving together both keep their changes
+            const res = await withTimeout(fbSave(snap, midsToSave), 90000);
+            if (res) setData(d => { const n = fbIncorporate(res, d); if (n !== d) adoptedData.current = n; return n; });
+            saveCount.current++;
+            if (saveCount.current % 5 === 0) fbSaveSnapshot(snap, loginLabel||loginRole||'system', 'שמירה אוטומטית');
+            clearTimeout(retryTimer.current);
+            setSaveErr('');
+            // edits that arrived while we were saving are still waiting for their own save
+            if (latestData.current === snap || latestData.current === adoptedData.current) { dirtyRef.current = false; setSaving('saved'); setSavedAt(new Date()); }
+            else setSaving('dirty');
+          } catch(e) {
+            // Put the ids back so the next save retries them instead of losing them
+            midsToSave.forEach(id => changedMids.current.add(id));
+            dirtyRef.current = true;
+            setSaving('error'); setSaveErr(e.message||String(e));
+            if (!e.nonRetryable) { clearTimeout(retryTimer.current); retryTimer.current = setTimeout(() => runSaveRef.current && runSaveRef.current(), 8000); }
+            break;
+          }
+        } while (saveAgain.current);
+      } finally { saveInFlight.current = false; }
+    })();
+    return savePromise.current;
+  };
+  runSaveRef.current = runSave;
+  // Save right now (used on logout / when the tab is hidden). Resolves to true when everything is on the server.
+  const flushSave = async () => {
+    clearTimeout(saveTimer.current);
+    if (!dirtyRef.current && saving !== 'error') return true;
+    await runSave();
+    return !dirtyRef.current;
   };
   useEffect(() => {
     if (!loaded||!data) return;
     latestData.current = data;
     if (firstLoad.current) { firstLoad.current=false; return; }
-    setSaving('saving');
+    if (adoptedData.current === data) { adoptedData.current = null; return; }   // just showing other editors' changes
+    dirtyRef.current = true;
+    setSaving('dirty');
     clearTimeout(saveTimer.current);
-    saveTimer.current = setTimeout(runSave, 2500);
+    saveTimer.current = setTimeout(() => runSaveRef.current && runSaveRef.current(), 1200);
   }, [data, loaded]);
+  // never lose work: warn before closing with unsaved changes, and save as soon as the tab is hidden
+  useEffect(() => {
+    const warn = e => { if (dirtyRef.current) { e.preventDefault(); e.returnValue = ''; return ''; } };
+    const hide = e => { if (dirtyRef.current && (e.type==='pagehide' || document.visibilityState==='hidden')) { clearTimeout(saveTimer.current); runSaveRef.current && runSaveRef.current(); } };
+    window.addEventListener('beforeunload', warn);
+    document.addEventListener('visibilitychange', hide);
+    window.addEventListener('pagehide', hide);
+    return () => { window.removeEventListener('beforeunload', warn); document.removeEventListener('visibilitychange', hide); window.removeEventListener('pagehide', hide); };
+  }, []);
 
   const missingAlerts = useMemo(() => {
     if (!data) return [];
@@ -321,6 +353,19 @@ function App() {
     mutM(db2,dc,dm,m=>({...m,parts:[...m.parts,...srcM.parts.map(p=>({...p,id:gid()}))]}));
   };
 
+  // copy only the parts the user ticked into another model (columns are matched by id, then by name; missing ones are added)
+  const copyPartsTo = (tb,tc,tm,parts,srcCols,skipDup) => {
+    if(!parts.length)return;
+    const target=data.brands.find(b=>b.id===tb)?.categories.find(c=>c.id===tc);
+    const tm0=target&&[...target.models,...(target.subCategories||[]).flatMap(sc=>sc.models)].find(m=>m.id===tm);
+    if(!tm0)return;
+    const r=copyPartsInto(tm0,parts,srcCols,skipDup,gid);
+    changedMids.current.add(tm);
+    mutM(tb,tc,tm,m=>copyPartsInto(m,parts,srcCols,skipDup,gid).model);
+    logAction('העתקת חלקים נבחרים',{count:parts.length,to:tm});
+    setTimeout(()=>alert('✅ '+r.n+' חלקים הועתקו'+(r.skipped?(' ('+r.skipped+' דולגו כי כבר קיימים)'):'')+'. ההעתקה נשמרת אוטומטית.'),0);
+  };
+
   const handleAddModel = (b,cid,name,scid) => {
     const id=gid(); changedMids.current.add(id);
     const nm={id,name,synonyms:[],images:[],notes:'',columns:DCOLS(),parts:[]};
@@ -490,9 +535,7 @@ function App() {
 
           {/* end (left): save state + main menu */}
           <div className="hdr-zone hdr-end">
-            {saving==='saving'&&<span className="tt tt-hdr" data-tt="שומר שינויים..." style={{fontSize:11,flexShrink:0,display:'flex'}}><Ic n="save" s={15}/></span>}
-            {saving==='saved' &&<span className="tt tt-hdr" data-tt="השינויים נשמרו" style={{flexShrink:0,color:'var(--green)',display:'flex'}}><Ic n="check" s={16} sw={2.2}/></span>}
-            {saving==='error' &&<button onClick={()=>{alert('שגיאת שמירה: '+saveErr);runSave();}} style={{fontSize:11,color:'#fff',background:'var(--red)',border:'none',borderRadius:5,padding:'3px 7px',cursor:'pointer',flexShrink:0}}>⚠</button>}
+            {editor&&<SaveBadge status={saving} savedAt={savedAt} err={saveErr} onRetry={()=>{runSave();}}/>}
           <div className="menu-wrap">
             <button onClick={()=>setMenuOpen(v=>!v)} className={'hdr-btn tt tt-hdr tt-l'+(menuOpen?' on':'')} data-tt="תפריט ראשי: השוואה, סל, מצב כהה ועוד" aria-label="תפריט"><Ic n="dots" s={19}/></button>
             {menuOpen&&<>
@@ -536,7 +579,7 @@ function App() {
                 </>}
 
                 <div className="menu-divider"/>
-                <button className="menu-item danger" onClick={()=>{setLoginRole(null);setSel(null);setSidebar(false);setMenuOpen(false);}}><span className="ic"><Ic n="power" s={17}/></span>יציאה מהמערכת</button>
+                <button className="menu-item danger" onClick={async()=>{setMenuOpen(false);const saved=await flushSave();if(!saved&&!confirm('השינויים האחרונים עדיין לא נשמרו בשרת. לצאת בכל זאת? השינויים האלה יאבדו.'))return;setLoginRole(null);setSel(null);setSidebar(false);}}><span className="ic"><Ic n="power" s={17}/></span>יציאה מהמערכת</button>
               </div>
             </>}
           </div>
@@ -561,6 +604,16 @@ function App() {
           </div>
         )}
       </header>
+      {(loadErr||saving==='error')&&(
+        <div className="save-banner" role="alert">
+          <Ic n="warn" s={18}/>
+          <div className="sb-txt">
+            <b>{loadErr?'הקטלוג לא נטען מהשרת — לא ניתן לשמור שינויים.':'השינויים האחרונים עדיין לא נשמרו!'}</b>
+            <span>{loadErr?'רענן את הדף ונסה שוב. אם הבעיה נמשכת בדוק את החיבור לאינטרנט.':saveErr}</span>
+          </div>
+          {loadErr?<button onClick={()=>location.reload()}>רענן</button>:<button onClick={()=>runSave()}>נסה שוב עכשיו</button>}
+        </div>
+      )}
 
       {/* News Ticker — below header */}
       <NewsTicker items={newsItems}/>
@@ -704,6 +757,7 @@ function App() {
                 onMove={(toBid,toCid)=>moveModel(brand.id,cat.id,model.id,toBid,toCid)}
                 onDuplicate={()=>duplicateModel(brand.id,cat.id,model.id)}
                 onCopyPartsFrom={(sb,sc,sm)=>copyPartsFrom(sb,sc,sm,brand.id,cat.id,model.id)}
+                onCopySelectedTo={copyPartsTo}
                 onAddToCart={addToCart}
                 onOpenCompare={()=>setShowCompare(true)} onOpenCart={()=>setShowCart(true)} compareCount={compareList.length} cartCount={cart.length}
                 reviewApprovals={makatApprovals}

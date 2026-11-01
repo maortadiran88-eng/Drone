@@ -127,7 +127,7 @@ function TechRequestBox({loginRole}){
 function TechSiteLink(){
   return(
     <div style={{marginBottom:16}}>
-      <button onClick={()=>{if(confirm('לעבור לאתר הטכנאים?\nhttps://maortadiran88-eng.github.io/GREE/'))window.open('https://maortadiran88-eng.github.io/GREE/','_blank');}}
+      <button onClick={()=>{if(confirm('להמשיך לאתר הטכנאים?'))window.open('https://maortadiran88-eng.github.io/GREE/','_blank');}}
         className="tech-link">
         <span className="tl-ic"><Ic n="wrench" s={19}/></span>
         <span style={{flex:1,textAlign:'right'}}>אתר הטכנאים</span>
