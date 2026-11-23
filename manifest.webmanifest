@@ -1,0 +1,13 @@
+{
+  "name": "קטלוג חלקי חילוף — תדיראן VRF",
+  "short_name": "קטלוג VRF",
+  "description": "קטלוג חלקי חילוף למערכות VRF",
+  "lang": "he",
+  "dir": "rtl",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#eaf0fa",
+  "theme_color": "#0a2a63",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}
