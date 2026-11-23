@@ -1043,6 +1043,12 @@ html.tech .air-canvas{display:none}
   window._db = firebase.firestore();
 </script>
 
+<script>
+  // Service Worker: פתיחת האתר גם בלי קליטה (רק ב-https או localhost)
+  if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+    window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
+  }
+</script>
 <script src="dist/app.js?v=2026112301"></script>
 </body>
 </html>

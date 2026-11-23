@@ -76,3 +76,11 @@
 - תיקון: מצב כהה דרס את כל ה-classים של `<html>` (כולל מצב טכנאי). עכשיו רק מחליף את `dark`.
 - תיקון: `body.style.background` נקבע בקוד וביטל את הרקע החי של שכבת העיצוב. הוסר.
 - שימו לב: הצפייה בלי קליטה דורשת שהדף עצמו ייטען. כדי שהאתר ייפתח בלי רשת בכלל נדרש Service Worker (עדיין לא נוסף).
+
+## פתיחת האתר בלי קליטה — Service Worker (נובמבר 2026)
+- `sw.js` + רישום קצר ב-`index.html`. אחרי ביקור אחד עם אינטרנט, הדף, `dist/app.js`, React, Firebase SDK ופונטים נשמרים במכשיר, והאתר נפתח גם בלי קליטה (יחד עם `js/offline.js` שמציג את עותק הקטלוג).
+- רשת קודם: כשיש קליטה תמיד נטענת הגרסה העדכנית. אם אין תשובה תוך 4 שניות או שאין רשת, נטען העותק השמור.
+- Firestore ושאר בקשות נתונים **לא** עוברות דרך ה-SW. עובד רק ב-https (GitHub Pages מתאים) או ב-localhost.
+- **כיבוי חירום:** להחליף את התוכן של `sw.js` ב:
+  `self.addEventListener('install',()=>self.skipWaiting());self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(k=>Promise.all(k.map(x=>caches.delete(x)))).then(()=>self.registration.unregister())));`
+- אחרי עדכון של קובץ קיים באתר אין צורך לשנות כלום; שינוי ב-`sw.js` עצמו מתעדכן אוטומטית.
