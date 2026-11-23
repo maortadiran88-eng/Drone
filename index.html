@@ -851,6 +851,140 @@ table{border-collapse:separate;border-spacing:0}
   .pm-row,.pm-q{opacity:1;clip-path:none}
   .pm-sheet,.pm-sent{display:none}
 }
+
+/* ══════════════════════════════════════════════════════════
+   VIVID LAYER (נובמבר 2026) — שכבת עיצוב צבעונית ויוקרתית
+   CSS בלבד. כדי לחזור לעיצוב הקודם: למחוק את הבלוק הזה (עד "END VIVID").
+   ══════════════════════════════════════════════════════════ */
+:root{
+  --violet:#6d5dfc;
+  --coral:#ff6b5e;
+  --amber:#ffb020;
+  --mint:#14c8a0;
+  --grad-brand:linear-gradient(120deg,#0a2a63 0%,#1565c0 48%,#0fb8cf 100%);
+  --grad-vivid:linear-gradient(120deg,#1565c0 0%,#6d5dfc 52%,#0fb8cf 100%);
+  --grad-text:linear-gradient(100deg,#0a2a63 0%,#1565c0 42%,#0fb8cf 100%);
+  --lift:0 2px 4px rgba(11,27,58,.06),0 22px 44px -22px rgba(21,101,192,.38);
+  --bg:#eaf0fa;
+}
+.dark{
+  --violet:#8b7dff;
+  --grad-brand:linear-gradient(120deg,#0e4fb5 0%,#2f7cf0 50%,#3bd9ea 100%);
+  --grad-vivid:linear-gradient(120deg,#2f7cf0 0%,#8b7dff 52%,#3bd9ea 100%);
+  --grad-text:linear-gradient(100deg,#e6ecf7 0%,#7fe9f4 45%,#a99bff 100%);
+  --lift:0 2px 4px rgba(0,0,0,.4),0 24px 48px -22px rgba(59,217,234,.28);
+  --bg:#060a13;
+}
+
+/* רקע חי: רשת צבעים רכה וקבועה מאחורי כל האתר */
+body{
+  background:
+    radial-gradient(900px 520px at 88% -8%,rgba(15,184,207,.20),transparent 60%),
+    radial-gradient(760px 520px at -6% 8%,rgba(109,93,252,.15),transparent 60%),
+    radial-gradient(900px 600px at 50% 112%,rgba(255,107,94,.10),transparent 60%),
+    var(--bg);
+  background-attachment:fixed;
+}
+.dark body{
+  background:
+    radial-gradient(900px 520px at 88% -8%,rgba(59,217,234,.13),transparent 60%),
+    radial-gradient(760px 520px at -6% 8%,rgba(139,125,255,.12),transparent 60%),
+    radial-gradient(900px 600px at 50% 112%,rgba(255,107,94,.06),transparent 60%),
+    var(--bg);
+  background-attachment:fixed;
+}
+
+/* כותרות עם מעבר צבע */
+@supports (-webkit-background-clip:text) or (background-clip:text){
+  .hero-title,.stat-n,.tc-page-title{
+    background:var(--grad-text);
+    -webkit-background-clip:text;background-clip:text;
+    -webkit-text-fill-color:transparent;color:transparent;
+  }
+}
+
+/* כפתורים: גרדיאנט + זוהר + הרמה */
+.btn-primary{
+  background:var(--grad-brand);color:#fff;border:0;
+  box-shadow:0 10px 24px -12px rgba(21,101,192,.7),inset 0 1px 0 rgba(255,255,255,.22);
+  transition:transform .16s var(--ease),box-shadow .2s ease,filter .2s ease;
+}
+.btn-primary:hover{background:var(--grad-brand);filter:brightness(1.08) saturate(1.1);box-shadow:0 16px 30px -12px rgba(21,101,192,.8),inset 0 1px 0 rgba(255,255,255,.28)}
+.btn-primary:active{transform:scale(.97)}
+.dark .btn-primary{color:#04141a}
+.btn-secondary:hover,.btn-ghost:hover{border-color:var(--cyan)}
+
+/* כרטיסים: הרמה, זוהר צבעוני וקו עליון חי בריחוף */
+.card-md,.card-lg,.card-sm,.brand-card,.mini-card,.pc3,.dg-card,.bento-tile{
+  transition:transform .28s var(--ease),box-shadow .28s var(--ease),border-color .2s ease;
+}
+@media (hover:hover) and (pointer:fine){
+  .brand-card:hover,.mini-card:hover,.pc3:hover,.dg-card:hover,.bento-tile:hover,.brand-tile:hover{
+    transform:translateY(-4px);
+    box-shadow:var(--lift)!important;
+    border-color:color-mix(in srgb,var(--cyan) 55%,var(--border))!important;
+  }
+}
+.brand-tile{border-radius:var(--radius-xl)!important}
+
+/* תיבת החיפוש הגדולה: טבעת צבע בפוקוס */
+.hero-search:focus{
+  border-color:transparent!important;
+  box-shadow:0 0 0 2px var(--cyan),0 0 0 7px var(--cyan-glow),0 24px 48px -24px rgba(21,101,192,.5)!important;
+}
+
+/* טבלת החלקים */
+.tc-table thead th{
+  background:linear-gradient(180deg,color-mix(in srgb,var(--primary) 9%,var(--card)),var(--card2));
+  border-bottom:2px solid color-mix(in srgb,var(--cyan) 45%,var(--border));
+  letter-spacing:.01em;
+}
+.tc-table tbody tr:hover{box-shadow:inset 3px 0 0 var(--cyan)}
+
+/* תפריט צד: גרדיאנט עדין ופריט פעיל בולט */
+.sb-aside{background:linear-gradient(180deg,var(--side-bg),color-mix(in srgb,var(--side-bg) 82%,var(--violet)))!important}
+.sb-model-name.on{
+  background:linear-gradient(90deg,var(--primary-light),transparent)!important;
+  box-shadow:inset -3px 0 0 var(--cyan);
+}
+.sb-head{box-shadow:0 14px 26px -14px var(--shadow2),inset 0 1px 0 rgba(255,255,255,.18)}
+
+/* כותרת עליונה וכפתוריה */
+.hdr-btn{transition:transform .16s var(--ease),background-color .15s ease,box-shadow .2s ease}
+.hdr-btn:hover{box-shadow:0 8px 18px -10px var(--cyan-glow)}
+.hdr-btn.on{box-shadow:0 0 0 1px var(--cyan),0 8px 20px -10px var(--cyan-glow)}
+
+/* סרגל כלים של הדגם: קבוצות כפולות זוהר בריחוף */
+.tool-btn:hover{box-shadow:0 10px 22px -14px var(--cyan-glow)}
+.tool-btn.active{background:var(--grad-brand)!important;color:#fff!important;border-color:transparent!important}
+.dark .tool-btn.active{color:#04141a!important}
+
+/* תגיות */
+.badge{letter-spacing:.01em}
+
+/* בלוק קריאה לפעולה */
+.cta-block{background-image:var(--grad-vivid)!important;box-shadow:0 30px 60px -30px rgba(109,93,252,.6)}
+
+/* מסך כניסה */
+.login-bg{background:
+  radial-gradient(700px 500px at 85% 10%,rgba(15,184,207,.28),transparent 60%),
+  radial-gradient(640px 480px at 8% 90%,rgba(109,93,252,.22),transparent 60%),
+  linear-gradient(160deg,#e3ecfb,#f4f1fb)}
+.dark .login-bg{background:
+  radial-gradient(700px 500px at 85% 10%,rgba(59,217,234,.18),transparent 60%),
+  radial-gradient(640px 480px at 8% 90%,rgba(139,125,255,.16),transparent 60%),
+  linear-gradient(160deg,#060a13,#0a1226)}
+
+/* פוקוס נגיש וצבעוני לכל האתר */
+:where(a,button,input,select,textarea,[tabindex]):focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+::selection{background:var(--cyan-glow)}
+::-webkit-scrollbar-thumb{background:linear-gradient(180deg,var(--cyan),var(--violet));opacity:.7}
+
+@media (prefers-reduced-motion:reduce){
+  .btn-primary,.card-md,.card-lg,.card-sm,.brand-card,.mini-card,.pc3,.dg-card,.bento-tile,.hdr-btn{transition:none}
+  .brand-card:hover,.mini-card:hover,.pc3:hover,.dg-card:hover,.bento-tile:hover,.brand-tile:hover{transform:none}
+}
+/* END VIVID */
 </style>
 </head>
 <body>
