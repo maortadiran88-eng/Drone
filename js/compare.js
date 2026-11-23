@@ -35,7 +35,7 @@ function CompareModelCard({b,c,m,onRemove}){
       {images.length>0 && (
         <div style={{display:'flex',gap:6,overflowX:'auto',padding:'10px 12px 0',flexShrink:0}}>
           {images.map((img,i)=>(
-            <img key={i} src={img} style={{height:70,borderRadius:8,border:'1px solid var(--border)',objectFit:'cover',flexShrink:0}}/>
+            <img key={i} alt="שרטוט" loading="lazy" src={img} style={{height:70,borderRadius:8,border:'1px solid var(--border)',objectFit:'cover',flexShrink:0}}/>
           ))}
         </div>
       )}

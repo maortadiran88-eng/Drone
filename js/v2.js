@@ -247,6 +247,15 @@ function Segmented({value,onChange,options,compact}){
 }
 
 // ══════════ COMMAND PALETTE — one search for everything (Ctrl/⌘ + K, or "/") ══════════
+// הדגשת הטקסט שהוקלד בתוצאות
+function Hl({text,q}){
+  const t=String(text||''), k=(q||'').trim();
+  if(!k) return t;
+  const i=t.toLowerCase().indexOf(k.toLowerCase());
+  if(i<0) return t;
+  return <>{t.slice(0,i)}<mark className="hl">{t.slice(i,i+k.length)}</mark>{t.slice(i+k.length)}</>;
+}
+
 function CommandPalette({open,onClose,query,setQuery,results,onSelect,recent,data,canSeeHidden}){
   const inRef = useRef(null);
   const [act,setAct] = useState(0);
@@ -263,7 +272,20 @@ function CommandPalette({open,onClose,query,setQuery,results,onSelect,recent,dat
     return out;
   },[open,query,recent,data,canSeeHidden]);
   if(!open) return null;
-  const list = query.trim() ? results.slice(0,40) : recents;
+  const ranked = useMemo(()=>{
+    const q=query.trim().toLowerCase(); if(!q) return [];
+    const score = r => {
+      const n=(r.m.name||'').toLowerCase();
+      if(n===q) return 0;
+      const pnHit=(r.ph||[]).some(p=>['tadPn','mfgPn'].some(k=>String((p.values||{})[k]||'').trim().toLowerCase()===q));
+      if(pnHit) return 1;
+      if(n.startsWith(q)) return 2;
+      if(n.includes(q)) return 3;
+      return 4;
+    };
+    return results.map((r,i)=>({r,i,s:score(r)})).sort((a,b)=>a.s-b.s||a.i-b.i).map(x=>x.r);
+  },[results,query]);
+  const list = query.trim() ? ranked.slice(0,40) : recents;
   const pick = r => { onSelect(r); onClose(); };
   const onKey = e => {
     if(e.key==='Escape'){ e.preventDefault(); onClose(); }
@@ -295,14 +317,14 @@ function CommandPalette({open,onClose,query,setQuery,results,onSelect,recent,dat
               <span className="cp-tile" style={{background:r.b.light||(r.b.color+'18'),color:r.b.color}}>{r.b.name.slice(0,2)}</span>
               <span className="cp-main">
                 <span className="cp-top">
-                  <b className="cp-name">{r.m.name}</b>
+                  <b className="cp-name"><Hl text={r.m.name} q={query}/></b>
                   {r.ms&&<span className="cp-syn">≡ {r.ms}</span>}
                   <span className="cp-meta">{r.b.name} · {r.c.name}</span>
                   {r.ph&&r.ph.length>0&&<span className="cp-cnt">{r.ph.length} חלקים תואמים</span>}
                 </span>
                 {r.ph&&r.ph.slice(0,2).map(p=>{
-                  const he=(p.values.nameHe||'').trim(),tad=(p.values.tadPn||'').trim();
-                  return(<span key={p.id} className="cp-part">{p.discontinued&&<em>הופסק</em>}{he}{tad&&<span className="num">{tad}</span>}</span>);
+                  const he=(p.values.nameHe||'').trim(),tad=(p.values.tadPn||'').trim(),mfg=(p.values.mfgPn||'').trim();
+                  return(<span key={p.id} className="cp-part">{p.discontinued&&<em>הופסק</em>}<Hl text={he} q={query}/>{tad&&<span className="num"><Hl text={tad} q={query}/></span>}{mfg&&<span className="num" style={{opacity:.7}}><Hl text={mfg} q={query}/></span>}</span>);
                 })}
               </span>
               <span className="cp-go"><Ic n="arrow" s={17}/></span>

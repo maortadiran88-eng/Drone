@@ -994,6 +994,21 @@ body{
   .brand-card:hover,.mini-card:hover,.pc3:hover,.dg-card:hover,.bento-tile:hover,.brand-tile:hover{transform:none}
 }
 /* END VIVID */
+/* ─── הדגשת חיפוש ─── */
+mark.hl{background:linear-gradient(transparent 58%,var(--cyan-glow) 58%);color:inherit;font-weight:800;padding:0 1px;border-radius:2px}
+
+/* ─── מצב טכנאי: תצוגה גדולה וברורה לעבודה בשטח (מתג בתפריט ⋮) ─── */
+html.tech body{font-size:17px;line-height:1.6}
+html.tech .btn,html.tech .tool-btn,html.tech .menu-item,html.tech .hdr-btn,html.tech .icon-btn,html.tech .sb-model,html.tech .sb-cat{min-height:48px}
+html.tech .btn-sm{min-height:44px;font-size:15px}
+html.tech .tc-table td,html.tech .tc-table th{font-size:16px;padding-top:13px;padding-bottom:13px}
+html.tech .pc3,html.tech .cp-row{font-size:16px}
+html.tech .tc-meta,html.tech .sb-model-name{font-size:15px}
+html.tech{--border:var(--border2)}
+html.tech *{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important}
+html.tech .hu-wrap,html.tech .pk-book,html.tech .air-canvas{animation:none!important}
+html.tech .air-canvas{display:none}
+
 
 /* ─── מסך טעינה (מוצג עד שהאפליקציה עולה) ─── */
 .boot{min-height:100vh;display:grid;place-items:center;align-content:center;gap:16px;text-align:center;font-family:'Heebo','Segoe UI',Arial,sans-serif;color:#0b1b3a}

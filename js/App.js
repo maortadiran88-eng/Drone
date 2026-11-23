@@ -11,6 +11,7 @@ function App() {
   const [loginLabel,     setLoginLabel]     = useState('');
   const [sel,            setSel]            = useState(null);
   const [dark,           setDark]           = useState(() => localStorage.getItem('ac_dark')==='1');
+  const [techMode,       setTechMode]       = useState(() => { try{ return localStorage.getItem('ac_tech')==='1'; }catch(e){ return false; } });
   const [sidebar,        setSidebar]        = useState(false);
   const [sidebarFilter,  setSidebarFilter]  = useState('');
   const [query,          setQuery]          = useState('');
@@ -262,6 +263,8 @@ function App() {
     fbLogAlert({type,text,actor:loginLabel||loginRole}).then(()=>fbGetAlerts().then(setAlerts));
   };
 
+  useEffect(()=>{ document.documentElement.classList.toggle('tech', techMode); },[techMode]);
+  const toggleTech = () => setTechMode(v => { try{ localStorage.setItem('ac_tech',v?'0':'1'); }catch(e){} return !v; });
   const toggleDark = () => setDark(v => { localStorage.setItem('ac_dark',v?'0':'1'); return !v; });
   const toggleFav  = mid => setFavorites(p => {
     const n=new Set(p); n.has(mid)?n.delete(mid):n.add(mid);
@@ -549,6 +552,7 @@ function App() {
                 <button className="menu-item" onClick={()=>{setShowHelp(true);setMenuOpen(false);}}><span className="ic"><Ic n="help" s={17}/></span>מדריך שימוש</button>
                 {editor&&<button className="menu-item" onClick={()=>{openNotif();setMenuOpen(false);}}><span className="ic"><Ic n="bell" s={17}/></span>התראות{notifCount>0&&<span className="tc-meta" style={{marginRight:'auto'}}>({notifCount})</span>}</button>}
                 <button className="menu-item" onClick={()=>{toggleDark();}}><span className="ic"><Ic n={dark?'sun':'moon'} s={17}/></span>{dark?'מצב בהיר':'מצב כהה'}</button>
+                <button className="menu-item" onClick={()=>{toggleTech();}}><span className="ic"><Ic n="wrench" s={17}/></span>{techMode?'כבה מצב טכנאי':'מצב טכנאי (תצוגה גדולה)'}</button>
 
                 {editor&&<div className="menu-divider"/>}
                 {admin&&<button className="menu-item" onClick={()=>{setShowMakatReview(true);setMenuOpen(false);}}><span className="ic"><Ic n="checkc" s={17}/></span>בדיקת מק"טים</button>}
