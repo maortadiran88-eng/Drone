@@ -6,9 +6,8 @@
 <title>קטלוג חלקי חילוף — תדיראן VRF</title>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -869,26 +868,6 @@ table{border-collapse:separate;border-spacing:0}
   window._db = firebase.firestore();
 </script>
 
-<script>
-  Babel.registerPreset("my-react-env", {
-    presets: [
-      Babel.availablePresets["env"],
-      [Babel.availablePresets["react"], { runtime: "classic" }]
-    ]
-  });
-</script>
-
-<script type="text/babel" data-presets="my-react-env" src="js/icons.js?v=2026102502"></script>
-<script type="text/babel" data-presets="my-react-env" src="js/constants.js?v=2026102502"></script>
-<script type="text/babel" data-presets="my-react-env" src="js/sync.js?v=2026102502"></script>
-<script type="text/babel" data-presets="my-react-env" src="js/firebase.js?v=2026102502"></script>
-<script type="text/babel" data-presets="my-react-env" src="js/helpers.js?v=2026102502"></script>
-<script type="text/babel" data-presets="my-react-env" src="js/v2.js?v=2026102502"></script>
-<script type="text/babel" data-presets="my-react-env" src="js/components.js?v=2026102502"></script>
-<script type="text/babel" data-presets="my-react-env" src="js/modals.js?v=2026102502"></script>
-<script type="text/babel" data-presets="my-react-env" src="js/ModelView.js?v=2026102502"></script>
-<script type="text/babel" data-presets="my-react-env" src="js/compare.js?v=2026102502"></script>
-<script type="text/babel" data-presets="my-react-env" src="js/makat_review.js?v=2026102502"></script>
-<script type="text/babel" data-presets="my-react-env" src="js/App.js?v=2026102502"></script>
+<script src="dist/app.js?v=2026112301"></script>
 </body>
 </html>
