@@ -33,6 +33,7 @@ function App() {
   const [showCart,       setShowCart]       = useState(false);
   const [showNotif,      setShowNotif]      = useState(false);
   const [showMakatReview,setShowMakatReview]= useState(false);
+  const [showQuality,setShowQuality]= useState(false);
   const [makatApprovals, setMakatApprovals] = useState(()=>{try{return JSON.parse(localStorage.getItem('makat_approvals')||'{}');}catch{return{};}});
   const [notifInitTab,   setNotifInitTab]   = useState('missing');
   const [reports,        setReports]        = useState([]);
@@ -551,6 +552,7 @@ function App() {
 
                 {editor&&<div className="menu-divider"/>}
                 {admin&&<button className="menu-item" onClick={()=>{setShowMakatReview(true);setMenuOpen(false);}}><span className="ic"><Ic n="checkc" s={17}/></span>בדיקת מק"טים</button>}
+                {admin&&<button className="menu-item" onClick={()=>{setShowQuality(true);setMenuOpen(false);}}><span className="ic"><Ic n="chart" s={17}/></span>בדיקת איכות נתונים</button>}
                 {editor&&<button className="menu-item" onClick={()=>{setShowXls(true);setMenuOpen(false);}}><span className="ic"><Ic n="import" s={17}/></span>ייבוא מ-Excel</button>}
                 {editor&&!admin&&<button className="menu-item" onClick={()=>{setShowNewsEditor(true);setMenuOpen(false);}}><span className="ic"><Ic n="news" s={17}/></span>עריכת חדשות</button>}
                 {editor&&!admin&&<button className="menu-item" onClick={()=>{setShowBroadcast(true);setMenuOpen(false);}}><span className="ic"><Ic n="megaphone" s={17}/></span>שליחת הודעת מערכת</button>}
@@ -789,6 +791,7 @@ function App() {
       {/* PANELS */}
       {showCart     &&<CartPanel cart={cart} data={data} onRemove={removeFromCart} onClear={clearCart} onClose={()=>setShowCart(false)} waDefaults={data.waDefaults||['nameHe','tadPn']}/>}
       {showCompare  &&<ComparePanel compareList={compareList} data={data} onClose={()=>setShowCompare(false)} onRemove={mid=>setCompareList(p=>p.filter(x=>x.mid!==mid))}/>}
+      {showQuality&&admin&&<DataQualityPanel data={data} onClose={()=>setShowQuality(false)} onOpen={(b,c,m)=>nav(b,c,m)}/>}
       {showMakatReview&&admin&&<MakatReviewPanel data={data} onClose={()=>setShowMakatReview(false)} approvals={makatApprovals}
         onApprove={key=>{const n={...makatApprovals,[key]:'ok'};setMakatApprovals(n);try{localStorage.setItem('makat_approvals',JSON.stringify(n));}catch{}}}
         onReject={key=>{const n={...makatApprovals,[key]:'fix'};setMakatApprovals(n);try{localStorage.setItem('makat_approvals',JSON.stringify(n));}catch{}}}
