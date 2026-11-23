@@ -286,7 +286,14 @@ function CommandPalette({open,onClose,query,setQuery,results,onSelect,recent,dat
     return results.map((r,i)=>({r,i,s:score(r)})).sort((a,b)=>a.s-b.s||a.i-b.i).map(x=>x.r);
   },[results,query]);
   const list = query.trim() ? ranked.slice(0,40) : recents;
-  const pick = r => { onSelect(r); onClose(); };
+  const RQ_KEY='ac_recent_q';
+  const readRQ = () => { try{ const a=JSON.parse(localStorage.getItem(RQ_KEY)||'[]'); return Array.isArray(a)?a.filter(x=>typeof x==='string').slice(0,5):[]; }catch(e){ return []; } };
+  const pick = r => {
+    const q=query.trim();
+    if(q.length>=2){ try{ localStorage.setItem(RQ_KEY,JSON.stringify([q,...readRQ().filter(x=>x.toLowerCase()!==q.toLowerCase())].slice(0,5))); }catch(e){} }
+    onSelect(r); onClose();
+  };
+  const recentQs = !query.trim() ? readRQ() : [];
   const onKey = e => {
     if(e.key==='Escape'){ e.preventDefault(); onClose(); }
     else if(e.key==='ArrowDown'){ e.preventDefault(); setAct(a=>Math.min(list.length-1,a+1)); }
@@ -303,6 +310,7 @@ function CommandPalette({open,onClose,query,setQuery,results,onSelect,recent,dat
           <button className="cp-x" onClick={onClose} aria-label="סגור">Esc</button>
         </div>
         <div className="cp-body">
+          {recentQs.length>0&&<div className="cp-chips" aria-label="חיפושים אחרונים">{recentQs.map(q=><button key={q} className="cp-chip" onClick={()=>setQuery(q)}>{q}</button>)}</div>}
           {!query.trim()&&<div className="cp-label">{recents.length?'נצפו לאחרונה':'התחילו להקליד כדי לחפש בכל הקטלוג'}</div>}
           {query.trim()&&!list.length&&(
             <div className="cp-empty">

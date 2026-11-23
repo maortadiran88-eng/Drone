@@ -997,6 +997,11 @@ body{
 /* ─── הדגשת חיפוש ─── */
 mark.hl{background:linear-gradient(transparent 58%,var(--cyan-glow) 58%);color:inherit;font-weight:800;padding:0 1px;border-radius:2px}
 
+/* ─── חיפושים אחרונים ─── */
+.cp-chips{display:flex;gap:8px;flex-wrap:wrap;padding:10px 14px 4px}
+.cp-chip{font-family:inherit;font-size:13px;font-weight:600;padding:6px 14px;border-radius:999px;border:1px solid var(--border2);background:var(--card2);color:var(--text2);cursor:pointer;transition:border-color .15s ease,background-color .15s ease,color .15s ease}
+.cp-chip:hover{border-color:var(--cyan);color:var(--text);background:var(--primary-light)}
+
 /* ─── מצב טכנאי: תצוגה גדולה וברורה לעבודה בשטח (מתג בתפריט ⋮) ─── */
 html.tech body{font-size:17px;line-height:1.6}
 html.tech .btn,html.tech .tool-btn,html.tech .menu-item,html.tech .hdr-btn,html.tech .icon-btn,html.tech .sb-model,html.tech .sb-cat{min-height:48px}

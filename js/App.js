@@ -88,11 +88,18 @@ function App() {
   const editor = loginRole==='editor' || loginRole==='admin';
   const viewer = loginRole==='viewer';
 
-  useEffect(() => { document.documentElement.className=dark?'dark':''; document.body.style.background='var(--bg)'; }, [dark]);
+  useEffect(() => { document.documentElement.classList.toggle('dark', !!dark); }, [dark]);
   useEffect(() => { const t=setInterval(()=>setNow(new Date()),1000); return()=>clearInterval(t); }, []);
 
   useEffect(() => {
-    fbLoad().then(d => { setData(d||INIT()); setLoaded(true); }).catch(() => { setLoadErr(true); setData(INIT()); setLoaded(true); });
+    fbLoad().then(d => { setData(d||INIT()); setLoaded(true); }).catch(() => {
+      setLoadErr(true);
+      offlineLoad().then(c => {
+        if (c) { OFFLINE_ST.fromCache = true; OFFLINE_ST.savedAt = c.savedAt; setData(c.data); }
+        else setData(INIT());
+        setLoaded(true);
+      });
+    });
     fbGetNews().then(docs => setNewsItems(docs.map(d=>d.text)));
     fbGetBroadcast().then(b => { if(b&&b.active) setBroadcast(b.msg); });
   }, []);
@@ -242,6 +249,28 @@ function App() {
     });
     if (window.innerWidth<700) setSidebar(false);
   };
+  // קישור ישיר לדגם (?b=&c=&m=) — נפתח אוטומטית אחרי כניסה, פעם אחת
+  // עותק מקומי לצפייה בלי קליטה: נשמר פעם אחת אחרי כניסה, רק אם הקטלוג נטען מהשרת
+  const offlineCached = useRef(false);
+  useEffect(()=>{
+    if (offlineCached.current || !data || !loginRole || loadErr || !loaded) return;
+    offlineCached.current = true;
+    setTimeout(()=>offlineSave(data, editor), 4000);
+  },[data,loginRole,loadErr,loaded]);
+  const deepLinkDone = useRef(false);
+  useEffect(()=>{
+    if (deepLinkDone.current || !data || !loginRole) return;
+    deepLinkDone.current = true;
+    let q; try { q = new URLSearchParams(window.location.search); } catch(e) { return; }
+    const bid=q.get('b'), cid=q.get('c'), mid=q.get('m'); if (!bid||!cid||!mid) return;
+    const b=data.brands.find(x=>x.id===bid);
+    const c=b&&b.categories.find(x=>x.id===cid);
+    const m=c&&[...c.models,...(c.subCategories||[]).flatMap(sc=>sc.models)].find(x=>x.id===mid);
+    try { window.history.replaceState(null,'',window.location.pathname); } catch(e) {}
+    if (!m || (!editor && (b.hidden||m.hidden))) { if (window.toast) window.toast('הדגם מהקישור לא נמצא או לא זמין'); return; }
+    nav(bid,cid,mid);
+  },[data,loginRole]);
+
   const goBack = () => { if(navStack.current.length>0){const p=navStack.current.pop();setSel(p);}else setSel(null); };
   const goHome = () => { setSel(null); setQuery(''); navStack.current=[]; };
 
@@ -614,8 +643,8 @@ function App() {
         <div className="save-banner" role="alert">
           <Ic n="warn" s={18}/>
           <div className="sb-txt">
-            <b>{loadErr?'הקטלוג לא נטען מהשרת — לא ניתן לשמור שינויים.':'השינויים האחרונים עדיין לא נשמרו!'}</b>
-            <span>{loadErr?'רענן את הדף ונסה שוב. אם הבעיה נמשכת בדוק את החיבור לאינטרנט.':saveErr}</span>
+            <b>{loadErr?(OFFLINE_ST.fromCache?'מצב לא מקוון — מוצג עותק שנשמר ב-'+new Date(OFFLINE_ST.savedAt).toLocaleString('he-IL',{dateStyle:'short',timeStyle:'short'}):'הקטלוג לא נטען מהשרת — לא ניתן לשמור שינויים.'):'השינויים האחרונים עדיין לא נשמרו!'}</b>
+            <span>{loadErr?(OFFLINE_ST.fromCache?'הנתונים לצפייה בלבד ועלולים לא להיות מעודכנים. עריכה ושמירה חסומות עד לחיבור לאינטרנט.':'רענן את הדף ונסה שוב. אם הבעיה נמשכת בדוק את החיבור לאינטרנט.'):saveErr}</span>
           </div>
           {loadErr?<button onClick={()=>location.reload()}>רענן</button>:<button onClick={()=>runSave()}>נסה שוב עכשיו</button>}
         </div>
