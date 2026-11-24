@@ -1055,19 +1055,21 @@ html.lite .pc3,html.lite .dg-card,html.lite .pk-card,html.lite .cp-row,html.lite
 @media (max-width:360px){.pc3-nums{grid-template-columns:1fr}}
 @media (prefers-reduced-motion:reduce){.sb-aside,.sb-aside.open,.menu-panel{transition:none;animation:none}}
 
+/* ─── מסכי מגע: בלי בועות הסבר (נתקעות אחרי לחיצה ונראות כחלון בצד) ─── */
+@media (hover:none),(pointer:coarse){
+  .tt::before,.tt::after{display:none!important;content:none!important}
+}
+
 /* ─── דף הבית: ממורכז בלי תמונת התלת־ממד ─── */
 .h2-hero{grid-template-columns:minmax(0,1fr)!important;max-width:760px;margin:0 auto;padding-top:18px}
 .h2-copy{text-align:center}
 .h2-hero .hero-search-wrap{margin:0 auto}
 .h2-chips{justify-content:center}
 
-/* ─── טבלת חלקים בנייד: עמודות עם גלילה לצדדים, עמודת השם נשארת צמודה ─── */
+/* ─── טבלת חלקים בנייד: כל העמודות גוללות יחד ─── */
 @media (max-width:720px){
   .tc-table{font-size:13px}
-  .tc-table th:nth-child(1),.tc-table td:nth-child(1){position:sticky;right:0;z-index:2;background:var(--card2)}
-  .tc-table th:nth-child(2),.tc-table td:nth-child(2){position:sticky;right:36px;z-index:2;background:var(--card);box-shadow:-8px 0 12px -10px var(--shadow2)}
-  .tc-table th:nth-child(2){background:var(--card2)}
-  .tc-table tbody tr td:nth-child(2){background:inherit}
+}
 }
 
 /* ─── מצב טכנאי: תצוגה גדולה וברורה לעבודה בשטח (מתג בתפריט ⋮) ─── */
@@ -1118,6 +1120,6 @@ html.tech .air-canvas{display:none}
     window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
   }
 </script>
-<script src="dist/app.js?v=20261124095028"></script>
+<script src="dist/app.js?v=20261124100445"></script>
 </body>
 </html>

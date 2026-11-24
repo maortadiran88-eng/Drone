@@ -48,18 +48,20 @@
   const smoothTop = (el) => {
     cancelAnimationFrame(anim);
     const from = el.scrollTop; if (from <= 0) return;
-    if (document.documentElement.classList.contains('tech')) { el.scrollTop = 0; return; }
-    const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion:reduce)').matches;
-    const dur = reduce ? 220 : Math.min(750, 320 + from / 6);
+    // פעולה שהמשתמש ביקש בלחיצה — תמיד חלקה (גם בהגדרת "הפחתת תנועה" או במצב טכנאי)
+    const dur = Math.max(550, Math.min(1000, 450 + from / 4));
+    const prev = el.style.scrollBehavior; el.style.scrollBehavior = 'auto';
+    const root = document.documentElement, prevRoot = root.style.scrollBehavior; root.style.scrollBehavior = 'auto';
     const t0 = performance.now();
-    const ease = t => t < .5 ? 4*t*t*t : 1 - Math.pow(-2*t + 2, 3) / 2;
-    const stop = () => cancelAnimationFrame(anim);
+    const ease = t => 1 - Math.pow(1 - t, 3);          // האטה רכה לקראת הסוף
+    const done = () => { el.style.scrollBehavior = prev; root.style.scrollBehavior = prevRoot; };
+    const stop = () => { cancelAnimationFrame(anim); done(); };
     el.addEventListener('touchstart', stop, {once:true, passive:true});
     el.addEventListener('wheel', stop, {once:true, passive:true});
     const step = now => {
       const p = Math.min(1, (now - t0) / dur);
       el.scrollTop = from * (1 - ease(p));
-      if (p < 1) anim = requestAnimationFrame(step);
+      if (p < 1) anim = requestAnimationFrame(step); else done();
     };
     anim = requestAnimationFrame(step);
   };
