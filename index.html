@@ -1002,6 +1002,15 @@ mark.hl{background:linear-gradient(transparent 58%,var(--cyan-glow) 58%);color:i
 .cp-chip{font-family:inherit;font-size:13px;font-weight:600;padding:6px 14px;border-radius:999px;border:1px solid var(--border2);background:var(--card2);color:var(--text2);cursor:pointer;transition:border-color .15s ease,background-color .15s ease,color .15s ease}
 .cp-chip:hover{border-color:var(--cyan);color:var(--text);background:var(--primary-light)}
 
+
+/* ─── מצב קל (מכשירים חלשים) + רקע קבוע שלא נתמך במגע ─── */
+@media (hover:none){body,.dark body{background-attachment:scroll}}
+html.lite body,html.lite.dark body{background-attachment:scroll}
+html.lite *{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+html.lite .air-canvas{display:none}
+html.lite .hu-float,html.lite .hu-air i,html.lite .pm-float{animation:none!important}
+html.lite .pc3,html.lite .dg-card,html.lite .pk-card,html.lite .cp-row,html.lite .page-in,html.lite .rise-in,html.lite .reveal,html.lite .tc-table tbody tr.part-row,html.lite .sb-body,html.lite .menu-panel{animation-duration:.01ms!important;animation-delay:0s!important}
+
 /* ─── מצב טכנאי: תצוגה גדולה וברורה לעבודה בשטח (מתג בתפריט ⋮) ─── */
 html.tech body{font-size:17px;line-height:1.6}
 html.tech .btn,html.tech .tool-btn,html.tech .menu-item,html.tech .hdr-btn,html.tech .icon-btn,html.tech .sb-model,html.tech .sb-cat{min-height:48px}

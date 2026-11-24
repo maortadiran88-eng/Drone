@@ -1,3 +1,16 @@
+// ══════════ מצב קל: מכשירים חלשים / חיסכון בנתונים / "הפחתת תנועה" ← פחות אפקטים כבדים ══════════
+(function(){
+  try {
+    const nav = navigator, conn = nav.connection || {};
+    const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion:reduce)').matches;
+    const weak = (nav.deviceMemory && nav.deviceMemory <= 2) ||
+                 (nav.hardwareConcurrency && nav.hardwareConcurrency <= 4 && /Android/i.test(nav.userAgent)) ||
+                 conn.saveData === true || /(^|-)2g$/.test(conn.effectiveType || '');
+    window.__LITE__ = !!(reduce || weak);
+    if (window.__LITE__) document.documentElement.classList.add('lite');
+  } catch(e) {}
+})();
+
 // ══════════ כפתור "חזרה למעלה" — מופיע בגלילה ארוכה (בדף או בתוך אזור גלילה ראשי) ══════════
 (function(){
   if (window.__topReady) return; window.__topReady = true;

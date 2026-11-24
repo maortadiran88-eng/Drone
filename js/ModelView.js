@@ -160,7 +160,13 @@ function ModelView({brand,cat,model,editor,admin,viewer,hq,data,favorites,onTogg
 
   const shareLink = () => {
     const url = window.location.href.split('?')[0]+`?b=${brand.id}&c=${cat.id}&m=${model.id}`;
-    navigator.clipboard?.writeText(url).then(()=>alert('✅ קישור הועתק')).catch(()=>alert('קישור:\n'+url));
+    const copy = () => (navigator.clipboard ? navigator.clipboard.writeText(url) : Promise.reject())
+      .then(()=>alert('✅ קישור הועתק')).catch(()=>alert('קישור:\n'+url));
+    // בנייד: תפריט השיתוף של המכשיר (וואטסאפ, SMS ועוד); אחרת העתקה ללוח
+    if (navigator.share && window.matchMedia && matchMedia('(pointer:coarse)').matches) {
+      navigator.share({title:`${brand.name} ${model.name}`, text:`${brand.name} ${model.name} — קטלוג חלקי חילוף`, url})
+        .catch(err => { if (!err || err.name !== 'AbortError') copy(); });
+    } else copy();
   };
 
   // ── Quick (mobile) mode ──

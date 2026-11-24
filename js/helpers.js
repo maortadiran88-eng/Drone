@@ -187,12 +187,17 @@ function AirParticles(){
     const move = e => { const r=canvas.getBoundingClientRect(); mouseX=e.clientX-r.left; mouseY=e.clientY-r.top; };
     const parent = canvas.parentElement;
     if(parent) parent.addEventListener('mousemove', move);
-    const particles = Array.from({length:34}, () => ({
+    const particles = Array.from({length:window.__LITE__?10:34}, () => ({
       x:Math.random()*W, y:Math.random()*H+H*.2,
       r:Math.random()*2+1, vy:-(Math.random()*.4+.2), vx:(Math.random()-.5)*.25,
       a:Math.random()*.4+.12
     }));
-    const tick = () => {
+    let last = 0, running = false;
+    const tick = (ts) => {
+      raf = requestAnimationFrame(tick);
+      if (document.hidden) return;
+      if (window.__LITE__ && ts - last < 50) return;   // ~20fps במכשירים חלשים
+      last = ts;
       ctx.clearRect(0,0,W,H);
       const dark = document.documentElement.classList.contains('dark');
       const color = dark ? '59,217,234' : '10,42,99';
@@ -204,11 +209,15 @@ function AirParticles(){
         ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
         ctx.fillStyle = `rgba(${color},${p.a})`; ctx.fill();
       });
-      raf = requestAnimationFrame(tick);
     };
-    tick();
+    // רץ רק כשהקנבס נראה על המסך (לא מוסתר, לא מחוץ לתצוגה)
+    const start = () => { if (!running) { running = true; raf = requestAnimationFrame(tick); } };
+    const stop  = () => { running = false; cancelAnimationFrame(raf); };
+    let io = null;
+    if ('IntersectionObserver' in window) { io = new IntersectionObserver(es => { es[0] && es[0].isIntersecting ? start() : stop(); }); io.observe(canvas); }
+    else start();
     return () => {
-      cancelAnimationFrame(raf);
+      stop(); if (io) io.disconnect();
       window.removeEventListener('resize', resize);
       if(parent) parent.removeEventListener('mousemove', move);
     };
