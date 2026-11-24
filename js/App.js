@@ -1,5 +1,8 @@
 const { useState, useEffect, useMemo, useRef } = React;
 
+// במובייל התפריט נפתח כגיליון תחתון מחוץ לכותרת (portal), כדי שלא ייתפס בתוך הכותרת השקופה
+function MenuHost({mob,children}){ return mob ? ReactDOM.createPortal(children, document.body) : children; }
+
 function App() {
   const [data,           setData]           = useState(null);
   const [loaded,         setLoaded]         = useState(false);
@@ -15,6 +18,7 @@ function App() {
   const [dark,           setDark]           = useState(() => localStorage.getItem('ac_dark')==='1');
   const [techMode,       setTechMode]       = useState(() => { try{ return localStorage.getItem('ac_tech')==='1'; }catch(e){ return false; } });
   const [sidebar,        setSidebar]        = useState(false);
+  const [isMob,          setIsMob]          = useState(() => window.innerWidth <= 720);
   const [sidebarFilter,  setSidebarFilter]  = useState('');
   const [query,          setQuery]          = useState('');
   const [imgModal,       setImgModal]       = useState({imgs:[],idx:0});
@@ -249,7 +253,7 @@ function App() {
       try { localStorage.setItem('ac_recent',JSON.stringify(n)); } catch {}
       return n;
     });
-    if (window.innerWidth<700) setSidebar(false);
+    if (window.innerWidth<=720) setSidebar(false);
   };
   // קישור ישיר לדגם (?b=&c=&m=) — נפתח אוטומטית אחרי כניסה, פעם אחת
   // עותק מקומי לצפייה בלי קליטה: נשמר פעם אחת אחרי כניסה, רק אם הקטלוג נטען מהשרת
@@ -266,6 +270,18 @@ function App() {
     if (r) { setLoginRole(r.role); setLoginLabel(r.label || r.role); }
     setSessionTried(true);
   },[loaded,data]);
+  // מובייל? + גובה הכותרת (למיקום מגירת המותגים מתחתיה)
+  useEffect(()=>{
+    const onR = () => {
+      setIsMob(window.innerWidth <= 720);
+      const h = headerRef.current && headerRef.current.offsetHeight;
+      if (h) document.documentElement.style.setProperty('--hdr-h', h + 'px');
+    };
+    onR(); window.addEventListener('resize', onR);
+    const ro = (window.ResizeObserver && headerRef.current) ? new ResizeObserver(onR) : null;
+    if (ro) ro.observe(headerRef.current);
+    return () => { window.removeEventListener('resize', onR); if (ro) ro.disconnect(); };
+  },[loginRole, loaded]);
   const deepLinkDone = useRef(false);
   useEffect(()=>{
     if (deepLinkDone.current || !data || !loginRole) return;
@@ -589,8 +605,8 @@ function App() {
             {editor&&<SaveBadge status={saving} savedAt={savedAt} err={saveErr} onRetry={()=>{runSave();}}/>}
           <div className="menu-wrap">
             <button onClick={()=>setMenuOpen(v=>!v)} className={'hdr-btn tt tt-hdr tt-l'+(menuOpen?' on':'')} data-tt="תפריט ראשי: השוואה, סל, מצב כהה ועוד" aria-label="תפריט"><Ic n="dots" s={19}/></button>
-            {menuOpen&&<>
-              <div onClick={()=>setMenuOpen(false)} style={{position:'fixed',inset:0,zIndex:240}}/>
+            {menuOpen&&<MenuHost mob={isMob}>
+              <div className="menu-scrim" onClick={()=>setMenuOpen(false)} style={{position:'fixed',inset:0,zIndex:240}}/>
               <div className="menu-panel" dir="rtl" style={{left:0,minWidth:250}}>
                 <button className="menu-item" onClick={()=>{goHome();setMenuOpen(false);}}><span className="ic"><Ic n="home" s={17}/></span>מסך הבית</button>
                 {sel&&<button className="menu-item" onClick={()=>{goBack();setMenuOpen(false);}}><span className="ic"><Ic n="back" s={17}/></span>חזור אחורה</button>}
@@ -643,7 +659,7 @@ function App() {
                 <div className="menu-divider"/>
                 <button className="menu-item danger" onClick={async()=>{setMenuOpen(false);const saved=await flushSave();if(!saved&&!confirm('השינויים האחרונים עדיין לא נשמרו בשרת. לצאת בכל זאת? השינויים האלה יאבדו.'))return;clearSession();setLoginRole(null);setSel(null);setSidebar(false);}}><span className="ic"><Ic n="power" s={17}/></span>יציאה מהמערכת</button>
               </div>
-            </>}
+            </MenuHost>}
           </div>
           </div>
         </div>
@@ -702,8 +718,9 @@ function App() {
       {/* BODY */}
       <div style={{display:'flex',flex:1,overflow:'hidden',height:'calc(100vh - 56px)'}}>
 
+        {isMob&&sidebar&&<div className="sb-scrim" onClick={()=>setSidebar(false)}/>}
         {/* SIDEBAR */}
-        <aside className="sb-aside" style={{width:sidebar?265:0,flexShrink:0,overflow:'hidden',transition:'width .28s var(--ease)'}}>
+        <aside className={'sb-aside'+(sidebar?' open':'')} aria-hidden={!sidebar} style={{width:sidebar?265:0,flexShrink:0,overflow:'hidden',transition:'width .28s var(--ease)'}}>
           <div style={{width:265,overflowY:'auto',height:'100%',display:'flex',flexDirection:'column'}}>
             <div style={{padding:'8px 10px',borderBottom:'1px solid var(--border)',flexShrink:0}}>
               <div style={{position:'relative'}}>

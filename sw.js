@@ -1,7 +1,7 @@
 // Service Worker — פתיחת האתר גם בלי קליטה (אחרי ביקור אחד עם אינטרנט).
 // נתוני הקטלוג עצמם לא עוברים כאן (Firestore לא נתפס); עותק הנתונים נשמר ב-js/offline.js.
 // אסטרטגיה: רשת קודם (תמיד הגרסה העדכנית כשיש קליטה), ואם אין תשובה תוך 4 שניות או אין רשת — העותק השמור.
-const CACHE = 'tadiran-shell-v1';
+const CACHE = 'tadiran-shell-v2';
 const NET_TIMEOUT = 4000;
 
 // רק קבצי האתר ו-CDN מוכרים. לעולם לא Firestore / Google APIs.

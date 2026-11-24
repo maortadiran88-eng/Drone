@@ -398,7 +398,7 @@ function PartsWall({parts,cols,brand,selRows,toggleRow,isPnCol,copiedId,copyVal,
                   <div key={col.id} className="pc3-n">
                     <span className="pc3-nl">{col.name}</span>
                     <span className="pc3-nv">
-                      <b className="num">{v}</b>
+                      <b className="num" style={{cursor:'copy'}} onClick={e=>{e.stopPropagation();copyVal(v,ck);}}>{v}</b>
                       <button className={'pc3-cp tt'+(copiedId===ck?' ok':'')} data-tt="העתק"
                         onClick={e=>{e.stopPropagation();copyVal(v,ck);}} aria-label={'העתק '+col.name}>
                         <Ic n={copiedId===ck?'check':'copy'} s={15} sw={copiedId===ck?2:1.7}/>

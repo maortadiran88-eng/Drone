@@ -26,6 +26,7 @@ function ModelView({brand,cat,model,editor,admin,viewer,hq,data,favorites,onTogg
   const [pendingOnly, setPendingOnly] = useState(false);
   const [showHiddenParts, setShowHiddenParts] = useState(false);
   const [partsView, setPartsView] = useState(()=>{
+    if(typeof window!=='undefined'&&window.innerWidth<=720&&!editor)return 'cards';
     try{const v=localStorage.getItem('ac_partsview');if(v==='list'||v==='cards')return v;}catch(e){}
     return (viewer||(typeof window!=='undefined'&&window.innerWidth<720))?'cards':'list';
   });
@@ -413,10 +414,10 @@ function ModelView({brand,cat,model,editor,admin,viewer,hq,data,favorites,onTogg
             <button onClick={onAddCol}               className="btn btn-sm btn-secondary">+ עמודה</button>
             <button onClick={()=>setShowPaste(v=>!v)} className="btn btn-sm btn-secondary">📋 הדבק</button>
           </>}
-          <Segmented compact value={partsView} onChange={changeView} options={[
+          {(editor||window.innerWidth>720)&&<Segmented compact value={partsView} onChange={changeView} options={[
             {v:'cards',label:'כרטיסים',icon:'folder',tt:'תצוגת כרטיסים תלת־ממדית'},
             {v:'list',label:'רשימה',icon:'clipboard',tt:'תצוגת טבלה (נדרשת לעריכה)'}
-          ]}/>
+          ]}/>}
           <span className="tc-meta" style={{marginRight:'auto'}}>
             {filtered.length===partsBase.length
               ? <>{filtered.length.toLocaleString()} חלקים</>

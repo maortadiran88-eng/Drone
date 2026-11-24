@@ -11,7 +11,8 @@
 <meta name="apple-mobile-web-app-title" content="קטלוג VRF">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="icon.svg">
+<link rel="icon" href="icon-192.png" type="image/png" sizes="192x192">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <title>קטלוג חלקי חילוף — תדיראן VRF</title>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
@@ -1012,6 +1013,46 @@ html.lite .air-canvas{display:none}
 html.lite .hu-float,html.lite .hu-air i,html.lite .pm-float{animation:none!important}
 html.lite .pc3,html.lite .dg-card,html.lite .pk-card,html.lite .cp-row,html.lite .page-in,html.lite .rise-in,html.lite .reveal,html.lite .tc-table tbody tr.part-row,html.lite .sb-body,html.lite .menu-panel{animation-duration:.01ms!important;animation-delay:0s!important}
 
+/* ═══ מובייל: מגירת מותגים, גיליון תפריט תחתון, רשימת חלקים קומפקטית (נובמבר 2026) ═══ */
+.sb-scrim{display:none}
+@media (max-width:720px){
+  /* סרגל המותגים: מגירה קבועה שנפתחת תמיד במלואה, ללא קשר למיקום הגלילה בדף */
+  .sb-aside{position:fixed!important;top:var(--hdr-h,56px);bottom:calc(66px + env(safe-area-inset-bottom,0px));right:0;z-index:300;
+    width:min(86vw,340px)!important;max-width:100%;border-radius:22px 0 0 22px;border-left:0!important;
+    transform:translateX(106%);visibility:hidden;box-shadow:-24px 0 56px -22px rgba(6,12,24,.55);
+    transition:transform .3s var(--ease),visibility 0s linear .3s}
+  .sb-aside.open{transform:none;visibility:visible;transition:transform .3s var(--ease)}
+  .sb-aside>div{width:100%!important}
+  .sb-scrim{display:block;position:fixed;top:var(--hdr-h,56px);left:0;right:0;bottom:0;z-index:290;background:rgba(6,12,24,.46);animation:tipFadeIn .2s ease}
+
+  /* תפריט ⋮: גיליון תחתון במקום חלון קטן בפינה */
+  .menu-scrim{background:rgba(6,12,24,.5);z-index:390!important;animation:tipFadeIn .2s ease}
+  .menu-panel{position:fixed!important;left:0!important;right:0!important;top:auto!important;bottom:0!important;z-index:400!important;
+    min-width:0!important;width:100%;max-height:80vh;border-radius:26px 26px 0 0;padding:14px 10px calc(14px + env(safe-area-inset-bottom,0px));
+    color:var(--text);font-family:var(--font);font-size:14px;transform-origin:bottom center;animation:sheetUp .28s var(--ease);
+    box-shadow:0 -24px 60px -20px rgba(6,12,24,.6)}
+  .menu-panel::before{content:"";display:block;width:42px;height:4px;border-radius:4px;background:var(--border2);margin:0 auto 10px}
+  .menu-item{min-height:48px;font-size:15px}
+  @keyframes sheetUp{from{transform:translateY(100%)}to{transform:none}}
+
+  /* רשימת חלקים: כרטיסים קומפקטיים, הרבה חלקים במסך אחד */
+  .pw{grid-template-columns:1fr;gap:8px;perspective:none}
+  .pc3{padding:11px 13px;border-radius:16px;gap:3px}
+  .pc3:hover{translate:none;transform:none}
+  .pc3-top{min-height:0;gap:6px}
+  .pc3-check{width:20px;height:20px;border-radius:6px}
+  .pc3-he{font-size:17px;line-height:1.25;margin-top:0}
+  .pc3-en{font-size:12px}
+  .pc3-nums{grid-template-columns:1fr 1fr;gap:6px;margin-top:4px}
+  .pc3-n{padding:6px 8px;border-radius:10px;min-width:0}
+  .pc3-nl{font-size:10.5px}
+  .pc3-nv b{font-size:14px;overflow-wrap:anywhere;font-weight:600}
+  .pc3-cp{width:34px;height:34px;flex-shrink:0}
+  .pc3-more{font-size:11.5px}
+}
+@media (max-width:360px){.pc3-nums{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:reduce){.sb-aside,.sb-aside.open,.menu-panel{transition:none;animation:none}}
+
 /* ─── מצב טכנאי: תצוגה גדולה וברורה לעבודה בשטח (מתג בתפריט ⋮) ─── */
 html.tech body{font-size:17px;line-height:1.6}
 html.tech .btn,html.tech .tool-btn,html.tech .menu-item,html.tech .hdr-btn,html.tech .icon-btn,html.tech .sb-model,html.tech .sb-cat{min-height:48px}
@@ -1060,6 +1101,6 @@ html.tech .air-canvas{display:none}
     window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
   }
 </script>
-<script src="dist/app.js?v=20261124050309"></script>
+<script src="dist/app.js?v=20261124091729"></script>
 </body>
 </html>

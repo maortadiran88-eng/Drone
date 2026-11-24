@@ -58,13 +58,16 @@
   window.addEventListener('appinstalled', function(){ window.__installEvt = null; if (window.toast) window.toast('✅ האתר הותקן במכשיר'); });
   const standalone = () => (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
   const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-  window.canInstallApp = () => !standalone() && (!!window.__installEvt || isIOS());
+  const isAndroid = () => /android/i.test(navigator.userAgent);
+  window.canInstallApp = () => !standalone() && (!!window.__installEvt || isIOS() || isAndroid());
   window.installApp = async function(){
     if (window.__installEvt) {
       try { window.__installEvt.prompt(); await window.__installEvt.userChoice; } catch(e) {}
       window.__installEvt = null;
     } else if (isIOS()) {
       if (window.toast) window.toast('באייפון: לחצו על כפתור השיתוף בספארי ואז "הוסף למסך הבית"');
+    } else if (window.toast) {
+      window.toast('בכרום: לחצו על ⋮ בפינת הדפדפן ובחרו "התקנת אפליקציה" או "הוספה למסך הבית"');
     }
   };
 })();
