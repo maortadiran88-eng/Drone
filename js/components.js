@@ -4,11 +4,12 @@ function LoginScreen({data,onLogin}){
   const submit=()=>{
     if(exiting)return;
     const users=data.users||DEFAULT_USERS;
-    const match=users.find(u=>u.pass===pwd);
+    const match=users.find(u=>u.pass===pwd||(u.ph&&u.ph===pwHash(pwd)));
     if(match){
       // Fade/scale the login screen out first, then hand off — so the
       // transition into the home screen feels like one continuous screen
       // instead of an abrupt swap.
+      try{saveSession(match,pwd);}catch(e){}
       setExiting(true);
       setTimeout(()=>onLogin(match.role,match.id,match.label), 480);
     }
@@ -179,11 +180,11 @@ function HomeScreen({data,onNav,recent,favorites,onToggleFav,loginRole,reports,t
             {query&&<SearchResultsPanel results={results} query={query} onClose={()=>setQuery('')} onSelect={r=>onNav(r.b.id,r.c.id,r.m.id,query)}/>}
           </div>
 
-          <div className="h2-chips rise-in" style={{'--d':4}}>
+          {!query&&<div className="h2-chips rise-in" style={{'--d':4}}>
             {visBrands.map(b=>(
               <button key={b.id} className="h2-chip" onClick={()=>openBrand(b.id)}><i style={{background:b.color}}/>{b.name}</button>
             ))}
-          </div>
+          </div>}
         </div>
         <div className="h2-stage rise-in" style={{'--d':2}}><HeroUnit3D/></div>
       </section>

@@ -271,7 +271,6 @@ function CommandPalette({open,onClose,query,setQuery,results,onSelect,recent,dat
     });
     return out;
   },[open,query,recent,data,canSeeHidden]);
-  if(!open) return null;
   const ranked = useMemo(()=>{
     const q=query.trim().toLowerCase(); if(!q) return [];
     const score = r => {
@@ -285,6 +284,7 @@ function CommandPalette({open,onClose,query,setQuery,results,onSelect,recent,dat
     };
     return results.map((r,i)=>({r,i,s:score(r)})).sort((a,b)=>a.s-b.s||a.i-b.i).map(x=>x.r);
   },[results,query]);
+  if(!open) return null;
   const list = query.trim() ? ranked.slice(0,40) : recents;
   const RQ_KEY='ac_recent_q';
   const readRQ = () => { try{ const a=JSON.parse(localStorage.getItem(RQ_KEY)||'[]'); return Array.isArray(a)?a.filter(x=>typeof x==='string').slice(0,5):[]; }catch(e){ return []; } };

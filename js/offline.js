@@ -12,8 +12,11 @@ const _offIdb = () => new Promise((res, rej) => {
 });
 // למשתמש צופה: בלי מותגים/דגמים/חלקים מוסתרים (לא נשמרים על המכשיר)
 function offlineFilter(data, editor){
-  if (editor) return data;
   const d = JSON.parse(JSON.stringify(data));
+  // סיסמאות לא נשמרות בטקסט גלוי על המכשיר — רק גיבוב (מספיק לאימות כניסה בלי קליטה)
+  if (Array.isArray(d.users)) d.users = d.users.map(u => { const {pass, ...rest} = u; return {...rest, ph: u.ph || pwHash(pass)}; });
+  if (editor) return d;
+  // למשתמש צופה: בלי מותגים/דגמים/חלקים מוסתרים (לא נשמרים על המכשיר)
   d.brands = (d.brands||[]).filter(b=>!b.hidden).map(b=>({...b,categories:(b.categories||[]).map(c=>{
     const fm = ms => (ms||[]).filter(m=>!m.hidden).map(m=>({...m,parts:(m.parts||[]).filter(p=>!p.hidden)}));
     return {...c, models:fm(c.models), subCategories:(c.subCategories||[]).map(sc=>({...sc,models:fm(sc.models)}))};
@@ -27,7 +30,10 @@ async function offlineSave(data, editor){
     await new Promise((res, rej) => { const tx = db0.transaction('kv','readwrite'); tx.objectStore('kv').put(payload,'catalog'); tx.oncomplete=res; tx.onerror=()=>rej(tx.error); });
   } catch(e) { console.warn('[offline] cache skipped', e && e.message); }
 }
-async function offlineLoad(){
+function offlineLoad(){
+  return Promise.race([_offlineLoad(), new Promise(r => setTimeout(() => r(null), 2500))]);
+}
+async function _offlineLoad(){
   try {
     const db0 = await _offIdb();
     const raw = await new Promise((res, rej) => { const rq = db0.transaction('kv').objectStore('kv').get('catalog'); rq.onsuccess=()=>res(rq.result); rq.onerror=()=>rej(rq.error); });

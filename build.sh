@@ -14,4 +14,6 @@ done
 .build/node_modules/.bin/esbuild dist/app.src.js --loader:.js=jsx --jsx=transform \
   --target=es2019 --minify --legal-comments=none --outfile=dist/app.js
 rm dist/app.src.js
+# מספר גרסה חדש בכל בנייה — כדי שהטלפונים יטענו את הקובץ החדש ולא עותק ישן מהמטמון
+sed -i -E "s#dist/app\.js\?v=[0-9]+#dist/app.js?v=$(date +%Y%m%d%H%M%S)#" index.html
 ls -la dist/app.js

@@ -30,6 +30,26 @@ const DEFAULT_TIPS = [
 const DEFAULT_DISCLAIMER = '⚠️ יש לבדוק פיזית שהמק"ט תואם לחלק לפני הזמנה. המידע במערכת הוא לעיון בלבד ואינו מהווה אחריות. במקרה של אי-התאמה, לחץ על "דווח שגיאה".';
 
 // Default users list — admin can add/remove/rename
+
+// ── כניסה שנשמרת במכשיר (בלי להקליד סיסמה בכל רענון) ──
+const SESSION_DAYS = 2;   // כמה ימים נשארים מחוברים. לשינוי: מספר ימים (למשל 1)
+function pwHash(s){ let h=0x811c9dc5; s=String(s==null?'':s); for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619)>>>0; } return h.toString(16); }
+function saveSession(user, pwd){
+  try { localStorage.setItem('ac_session', JSON.stringify({id:user.id, role:user.role, label:user.label, ts:Date.now(), sig:pwHash(pwd)})); } catch(e) {}
+}
+function clearSession(){ try { localStorage.removeItem('ac_session'); } catch(e) {} }
+function restoreSession(users){
+  try {
+    const o = JSON.parse(localStorage.getItem('ac_session')||'null');
+    if (!o || !o.ts || Date.now() - o.ts > SESSION_DAYS*864e5) { clearSession(); return null; }
+    const u = (users||[]).find(x => x.id === o.id && x.role === o.role);
+    // אם הסיסמה של המשתמש שונתה (או המשתמש נמחק) — הכניסה השמורה מתבטלת
+    const cur = u ? (u.ph || pwHash(u.pass)) : null;
+    if (!u || cur !== o.sig) { clearSession(); return null; }
+    return {role:u.role, id:u.id, label:u.label};
+  } catch(e) { return null; }
+}
+
 const DEFAULT_USERS = [
   {id:'admin',   label:'מנהל',   pass:'admin1234',   role:'admin'},
   {id:'editor1', label:'עורך 1', pass:'editor1234',  role:'editor'},

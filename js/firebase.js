@@ -20,13 +20,19 @@ async function fbLoad() {
   const all = syncAllModels(d);
   const mids = all.map(x => x.m.id);
   const pm = {};
+  const prog = window.__LOAD_PROGRESS__ = {done:0, total:mids.length};
   if (mids.length) {
-    const chunks = [];
-    for (let i=0;i<mids.length;i+=20) chunks.push(mids.slice(i,i+20));
-    for (const ch of chunks) {
-      const docs = await Promise.all(ch.map(id => db.collection('parts').doc(id).get()));
-      docs.forEach(doc => { if (doc.exists) pm[doc.id] = doc.data(); });
-    }
+    // טעינה במקביל (עד 24 מסמכים בו-זמנית) — מהיר בהרבה מקבוצות עוקבות, במיוחד בנייד
+    let idx = 0;
+    const worker = async () => {
+      while (idx < mids.length) {
+        const id = mids[idx++];
+        const doc = await db.collection('parts').doc(id).get();
+        if (doc.exists) pm[doc.id] = doc.data();
+        prog.done++;
+      }
+    };
+    await Promise.all(Array.from({length: Math.min(24, mids.length)}, worker));
   }
   const models = {}; const pending = new Set();
   all.forEach(({m, sub}) => {

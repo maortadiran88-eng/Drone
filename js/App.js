@@ -8,6 +8,8 @@ function App() {
   const [savedAt,        setSavedAt]        = useState(null);
   const [loadErr,        setLoadErr]        = useState(false);
   const [loginRole,      setLoginRole]      = useState(null);
+  const [sessionTried,   setSessionTried]   = useState(false);
+  const loadStartRef = useRef(Date.now());
   const [loginLabel,     setLoginLabel]     = useState('');
   const [sel,            setSel]            = useState(null);
   const [dark,           setDark]           = useState(() => localStorage.getItem('ac_dark')==='1');
@@ -92,7 +94,7 @@ function App() {
   useEffect(() => { const t=setInterval(()=>setNow(new Date()),1000); return()=>clearInterval(t); }, []);
 
   useEffect(() => {
-    fbLoad().then(d => { setData(d||INIT()); setLoaded(true); }).catch(() => {
+    fbLoad().then(d => { setData(d||INIT()); setLoaded(true); setLoadErr(false); OFFLINE_ST.fromCache = false; }).catch(() => {
       setLoadErr(true);
       offlineLoad().then(c => {
         if (c) { OFFLINE_ST.fromCache = true; OFFLINE_ST.savedAt = c.savedAt; setData(c.data); }
@@ -257,6 +259,13 @@ function App() {
     offlineCached.current = true;
     setTimeout(()=>offlineSave(data, editor), 4000);
   },[data,loginRole,loadErr,loaded]);
+  // כניסה שמורה: אם נכנסת ב-יומיים ימים האחרונים לא צריך להקליד סיסמה שוב
+  useEffect(()=>{
+    if (!loaded || !data || sessionTried) return;
+    const r = restoreSession(data.users || DEFAULT_USERS);
+    if (r) { setLoginRole(r.role); setLoginLabel(r.label || r.role); }
+    setSessionTried(true);
+  },[loaded,data]);
   const deepLinkDone = useRef(false);
   useEffect(()=>{
     if (deepLinkDone.current || !data || !loginRole) return;
@@ -516,13 +525,22 @@ function App() {
       <div style={{position:'relative',zIndex:1,textAlign:'center',animation:'fadeIn .4s ease-out'}}>
         <div style={{fontWeight:900,fontSize:24,letterSpacing:2,color:'var(--text)',marginBottom:2}}>TADI<span style={{color:'var(--primary)'}}>RAN</span></div>
         <div style={{fontSize:10,letterSpacing:3,color:'var(--sub)',fontWeight:700,marginBottom:26}}>P A R T S &nbsp; C A T A L O G</div>
-        <div style={{width:34,height:34,margin:'0 auto',border:'3px solid var(--border2)',borderTop:'3px solid var(--cyan)',borderRadius:'50%',animation:'spin .8s linear infinite'}}/>
-        <div style={{fontSize:12.5,color:'var(--sub)',marginTop:16,fontWeight:600}}>טוען...</div>
+        <div className="ld-spin" style={{width:34,height:34,margin:'0 auto',border:'3px solid var(--border2)',borderTop:'3px solid var(--cyan)',borderRadius:'50%',animation:'spin .8s linear infinite'}}/>
+        <div style={{fontSize:12.5,color:'var(--sub)',marginTop:16,fontWeight:600}}>{(()=>{const p=window.__LOAD_PROGRESS__;return p&&p.total?`טוען קטלוג… ${Math.min(p.done,p.total)} / ${p.total}`:'טוען...';})()}</div>
+        {Date.now()-loadStartRef.current>12000&&(
+          <div style={{marginTop:18,display:'flex',flexDirection:'column',gap:10,alignItems:'center'}}>
+            <div style={{fontSize:12.5,color:'var(--sub)',maxWidth:260,lineHeight:1.5}}>הטעינה איטית מהרגיל. בדוק את החיבור לאינטרנט.</div>
+            <div style={{display:'flex',gap:8,flexWrap:'wrap',justifyContent:'center'}}>
+              <button className="btn btn-primary" onClick={()=>location.reload()}>נסה שוב</button>
+              <button className="btn btn-secondary" onClick={()=>{offlineLoad().then(c=>{if(c){OFFLINE_ST.fromCache=true;OFFLINE_ST.savedAt=c.savedAt;setData(c.data);setLoadErr(true);setLoaded(true);}else alert('אין עותק שמור במכשיר. נדרש חיבור לאינטרנט לפתיחה ראשונה.');});}}>פתח עותק שמור</button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
 
-  if (!loginRole) return <LoginScreen data={data} onLogin={(role,id,label)=>{setLoginRole(role);setLoginLabel(label||role);}}/>;
+  if (!loginRole) return !sessionTried ? null : <LoginScreen data={data} onLogin={(role,id,label)=>{setLoginRole(role);setLoginLabel(label||role);}}/>;
 
   const hdrBg = brand?.color || 'var(--primary)';
   const tips  = data.tips&&data.tips.length ? data.tips : DEFAULT_TIPS;
@@ -614,7 +632,7 @@ function App() {
                 </>}
 
                 <div className="menu-divider"/>
-                <button className="menu-item danger" onClick={async()=>{setMenuOpen(false);const saved=await flushSave();if(!saved&&!confirm('השינויים האחרונים עדיין לא נשמרו בשרת. לצאת בכל זאת? השינויים האלה יאבדו.'))return;setLoginRole(null);setSel(null);setSidebar(false);}}><span className="ic"><Ic n="power" s={17}/></span>יציאה מהמערכת</button>
+                <button className="menu-item danger" onClick={async()=>{setMenuOpen(false);const saved=await flushSave();if(!saved&&!confirm('השינויים האחרונים עדיין לא נשמרו בשרת. לצאת בכל זאת? השינויים האלה יאבדו.'))return;clearSession();setLoginRole(null);setSel(null);setSidebar(false);}}><span className="ic"><Ic n="power" s={17}/></span>יציאה מהמערכת</button>
               </div>
             </>}
           </div>
