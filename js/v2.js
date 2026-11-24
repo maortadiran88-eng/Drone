@@ -181,9 +181,9 @@ function PrintedCatalogs(){
             <span className="pk-sub">קטלוג מודפס</span>
             <span className="pk-go"><Ic n="arrow" s={17}/></span>
           </a>
-          <a className="pk-wa tt" data-tt="שלח את הקישור לקטלוג בווצאפ, ותבחר למי" href={waLink(k)} target="_blank" rel="noopener noreferrer"
-            aria-label={'שלח את הקישור לקטלוג '+k.title+' בווצאפ'}>
-            <Ic n="whatsapp" s={18}/><span>שלח בווצאפ</span>
+          <a className="pk-wa tt" data-tt="שלח את הקישור לקטלוג בוואטסאפ, ותבחר למי" href={waLink(k)} target="_blank" rel="noopener noreferrer"
+            aria-label={'שלח את הקישור לקטלוג '+k.title+' בוואטסאפ'}>
+            <Ic n="whatsapp" s={18}/><span>שלח בוואטסאפ</span>
           </a>
         </div>
       ))}
@@ -212,7 +212,7 @@ function HowItWorks(){
   const steps = [
     ['search','חפשו','לפי מק"ט, דגם או שם חלק, בעברית או באנגלית.','hw-a'],
     ['checkc','בחרו','לחצו על שורה כדי לבחור חלקים, או הוסיפו אותם לסל.','hw-b'],
-    ['send','שלחו','שליחה בווצאפ בלחיצה אחת, או ייצוא ל-Excel ול-PDF.','hw-c'],
+    ['send','שלחו','שליחה בוואטסאפ בלחיצה אחת, או ייצוא ל-Excel ול-PDF.','hw-c'],
   ];
   return(
     <div className="hw-grid">

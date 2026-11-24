@@ -598,39 +598,48 @@ function App() {
                 <button className="menu-item" onClick={()=>{setShowCart(true);setMenuOpen(false);}}><span className="ic"><Ic n="cart" s={17}/></span>סל חלקים{cart.length>0&&<span className="tc-meta" style={{marginRight:'auto'}}>({cart.length})</span>}</button>
                 <button className="menu-item" onClick={()=>{setShowHelp(true);setMenuOpen(false);}}><span className="ic"><Ic n="help" s={17}/></span>מדריך שימוש</button>
                 {editor&&<button className="menu-item" onClick={()=>{openNotif();setMenuOpen(false);}}><span className="ic"><Ic n="bell" s={17}/></span>התראות{notifCount>0&&<span className="tc-meta" style={{marginRight:'auto'}}>({notifCount})</span>}</button>}
+                <div className="menu-divider"/>
+                <div className="menu-label">תצוגה</div>
                 <button className="menu-item" onClick={()=>{toggleDark();}}><span className="ic"><Ic n={dark?'sun':'moon'} s={17}/></span>{dark?'מצב בהיר':'מצב כהה'}</button>
                 <button className="menu-item" onClick={()=>{toggleTech();}}><span className="ic"><Ic n="wrench" s={17}/></span>{techMode?'כבה מצב טכנאי':'מצב טכנאי (תצוגה גדולה)'}</button>
-
-                {editor&&<div className="menu-divider"/>}
-                {admin&&<button className="menu-item" onClick={()=>{setShowMakatReview(true);setMenuOpen(false);}}><span className="ic"><Ic n="checkc" s={17}/></span>בדיקת מק"טים</button>}
-                {admin&&<button className="menu-item" onClick={()=>{setShowQuality(true);setMenuOpen(false);}}><span className="ic"><Ic n="chart" s={17}/></span>בדיקת איכות נתונים</button>}
-                {editor&&<button className="menu-item" onClick={()=>{setShowXls(true);setMenuOpen(false);}}><span className="ic"><Ic n="import" s={17}/></span>ייבוא מ-Excel</button>}
-                {editor&&!admin&&<button className="menu-item" onClick={()=>{setShowNewsEditor(true);setMenuOpen(false);}}><span className="ic"><Ic n="news" s={17}/></span>עריכת חדשות</button>}
-                {editor&&!admin&&<button className="menu-item" onClick={()=>{setShowBroadcast(true);setMenuOpen(false);}}><span className="ic"><Ic n="megaphone" s={17}/></span>שליחת הודעת מערכת</button>}
-                {editor&&!admin&&<button className="menu-item" onClick={()=>{setShowDashboard(true);setMenuOpen(false);}}><span className="ic"><Ic n="chart" s={17}/></span>דשבורד</button>}
-
+                {typeof canInstallApp==='function'&&canInstallApp()&&<button className="menu-item" onClick={()=>{installApp();setMenuOpen(false);}}><span className="ic"><Ic n="phone" s={17}/></span>התקנה כאפליקציה</button>}
+                {editor&&<>
+                <div className="menu-divider"/>
+                <div className="menu-label">עריכה</div>
+                <button className="menu-item" onClick={()=>{setShowXls(true);setMenuOpen(false);}}><span className="ic"><Ic n="import" s={17}/></span>ייבוא מ-Excel</button>
+                {!admin&&<>
+                <button className="menu-item" onClick={()=>{setShowNewsEditor(true);setMenuOpen(false);}}><span className="ic"><Ic n="news" s={17}/></span>עריכת חדשות</button>
+                <button className="menu-item" onClick={()=>{setShowBroadcast(true);setMenuOpen(false);}}><span className="ic"><Ic n="megaphone" s={17}/></span>שליחת הודעת מערכת</button>
+                <button className="menu-item" onClick={()=>{setShowDashboard(true);setMenuOpen(false);}}><span className="ic"><Ic n="chart" s={17}/></span>דשבורד</button>
+                </>}
+                </>}
                 {admin&&<>
-                  <div className="menu-divider"/>
+                <div className="menu-divider"/>
+                <div className="menu-label">ניהול</div>
                   <button className="menu-item" onClick={()=>{setBrandMgr(true);setMenuOpen(false);}}><span className="ic"><Ic n="settings" s={17}/></span>ניהול מותגים</button>
-                  <button className="menu-item" onClick={()=>{setShowDashboard(true);setMenuOpen(false);}}><span className="ic"><Ic n="chart" s={17}/></span>דשבורד</button>
                   <button className="menu-item" onClick={()=>{setShowUsersMgr(true);setMenuOpen(false);}}><span className="ic"><Ic n="users" s={17}/></span>ניהול משתמשים</button>
                   <button className="menu-item" onClick={()=>{setChPwd(true);setMenuOpen(false);}}><span className="ic"><Ic n="key" s={17}/></span>שינוי סיסמה</button>
-                  <div className="menu-divider"/>
+                  <button className="menu-item" onClick={()=>{setShowDashboard(true);setMenuOpen(false);}}><span className="ic"><Ic n="chart" s={17}/></span>דשבורד</button>
+                {admin&&<button className="menu-item" onClick={()=>{setShowMakatReview(true);setMenuOpen(false);}}><span className="ic"><Ic n="checkc" s={17}/></span>בדיקת מק"טים</button>}
+                {admin&&<button className="menu-item" onClick={()=>{setShowQuality(true);setMenuOpen(false);}}><span className="ic"><Ic n="chart" s={17}/></span>בדיקת איכות נתונים</button>}
+                <div className="menu-divider"/>
+                <div className="menu-label">תוכן</div>
                   <button className="menu-item" onClick={()=>{setShowNewsEditor(true);setMenuOpen(false);}}><span className="ic"><Ic n="news" s={17}/></span>עריכת חדשות</button>
                   <button className="menu-item" onClick={()=>{setShowBroadcast(true);setMenuOpen(false);}}><span className="ic"><Ic n="megaphone" s={17}/></span>הודעת מערכת</button>
                   <button className="menu-item" onClick={()=>{setShowHistory(true);fbGetHist().then(setHistData);setMenuOpen(false);}}><span className="ic"><Ic n="history" s={17}/></span>היסטוריה / גרסאות</button>
-                  <div className="menu-divider"/>
-                  <button className="menu-item" onClick={()=>{setShowBulkMove(true);setMenuOpen(false);}}><span className="ic"><Ic n="shuffle" s={17}/></span>העברה גורפת</button>
-                  <button className="menu-item danger" onClick={()=>{setShowBulkDel(true);setMenuOpen(false);}}><span className="ic"><Ic n="trash" s={17}/></span>מחיקה גורפת</button>
-                  <div className="menu-divider"/>
+                <div className="menu-divider"/>
+                <div className="menu-label">גיבוי וייצוא</div>
                   <button className="menu-item" onClick={()=>{expXLS();setMenuOpen(false);}}><span className="ic"><Ic n="sheet" s={17}/></span>ייצוא ל-Excel</button>
                   <button className="menu-item" onClick={()=>{expJSON();setMenuOpen(false);}}><span className="ic"><Ic n="save" s={17}/></span>ייצוא גיבוי (JSON)</button>
                   <label className="menu-item" style={{cursor:'pointer'}}>
                     <span className="ic"><Ic n="folder" s={17}/></span>ייבוא גיבוי (JSON)
                     <input type="file" accept=".json" onChange={e=>{impFile(e);setMenuOpen(false);}} style={{display:'none'}}/>
                   </label>
+                <div className="menu-divider"/>
+                <div className="menu-label">פעולות גורפות</div>
+                  <button className="menu-item" onClick={()=>{setShowBulkMove(true);setMenuOpen(false);}}><span className="ic"><Ic n="shuffle" s={17}/></span>העברה גורפת</button>
+                  <button className="menu-item danger" onClick={()=>{setShowBulkDel(true);setMenuOpen(false);}}><span className="ic"><Ic n="trash" s={17}/></span>מחיקה גורפת</button>
                 </>}
-
                 <div className="menu-divider"/>
                 <button className="menu-item danger" onClick={async()=>{setMenuOpen(false);const saved=await flushSave();if(!saved&&!confirm('השינויים האחרונים עדיין לא נשמרו בשרת. לצאת בכל זאת? השינויים האלה יאבדו.'))return;clearSession();setLoginRole(null);setSel(null);setSidebar(false);}}><span className="ic"><Ic n="power" s={17}/></span>יציאה מהמערכת</button>
               </div>

@@ -51,3 +51,20 @@
   const mount = () => document.body && document.body.appendChild(btn);
   if (document.body) mount(); else document.addEventListener('DOMContentLoaded', mount);
 })();
+
+// ══════════ התקנה כאפליקציה (Android: חלון התקנה; iPhone: הוראות) ══════════
+(function(){
+  window.addEventListener('beforeinstallprompt', function(ev){ ev.preventDefault(); window.__installEvt = ev; });
+  window.addEventListener('appinstalled', function(){ window.__installEvt = null; if (window.toast) window.toast('✅ האתר הותקן במכשיר'); });
+  const standalone = () => (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
+  const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  window.canInstallApp = () => !standalone() && (!!window.__installEvt || isIOS());
+  window.installApp = async function(){
+    if (window.__installEvt) {
+      try { window.__installEvt.prompt(); await window.__installEvt.userChoice; } catch(e) {}
+      window.__installEvt = null;
+    } else if (isIOS()) {
+      if (window.toast) window.toast('באייפון: לחצו על כפתור השיתוף בספארי ואז "הוסף למסך הבית"');
+    }
+  };
+})();

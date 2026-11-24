@@ -36,7 +36,7 @@ function WaEditorModal({brand,cat,model,selRows,defaultCols,onClose}){
     w.document.close();
   };
   return(
-    <Modal onClose={onClose} wide title="📱 עריכת הודעת ווצאפ">
+    <Modal onClose={onClose} wide title="📱 עריכת הודעת וואטסאפ">
       <div style={{marginBottom:14}}>
         <div style={{fontWeight:'bold',fontSize:13,marginBottom:8,color:'var(--text)'}}>בחר עמודות לשליחה:</div>
         <div style={{display:'flex',gap:6,flexWrap:'wrap',marginBottom:8}}>
@@ -63,7 +63,7 @@ function WaEditorModal({brand,cat,model,selRows,defaultCols,onClose}){
       <div style={{background:'var(--row2)',borderRadius:8,padding:'8px 12px',marginBottom:14,fontSize:12,color:'var(--sub)'}}>{sp.length} שורות · {activeCols.length} עמודות נבחרו</div>
       <div style={{display:'flex',gap:8}}>
         <button onClick={exportSelectedPDF} disabled={!colSel.size} style={{flex:1,...BPr(colSel.size?'var(--text2)':'#9aa5b1')}}>🖨️ PDF נבחרים</button>
-        <button onClick={()=>window.open('https://wa.me/?text='+encodeURIComponent(buildMsg()),'_blank')} disabled={!colSel.size} style={{flex:1,...BPr(colSel.size?'#25D366':'#9aa5b1')}}>📱 ווצאפ</button>
+        <button onClick={()=>window.open('https://wa.me/?text='+encodeURIComponent(buildMsg()),'_blank')} disabled={!colSel.size} style={{flex:1,...BPr(colSel.size?'#25D366':'#9aa5b1')}}>📱 וואטסאפ</button>
         <button onClick={onClose} style={{...BST,padding:'10px 14px'}}>✕</button>
       </div>
     </Modal>
@@ -485,7 +485,7 @@ function ChangePwd({data,onSave,onClose}){
       </div>
 
       {/* WA defaults */}
-      <div style={{fontWeight:'bold',fontSize:14,color:'var(--sub)',marginBottom:10,paddingTop:12,paddingBottom:8,borderBottom:'1px solid var(--border)',borderTop:'1px solid var(--border)',marginTop:4}}>📱 ברירת מחדל לווצאפ</div>
+      <div style={{fontWeight:'bold',fontSize:14,color:'var(--sub)',marginBottom:10,paddingTop:12,paddingBottom:8,borderBottom:'1px solid var(--border)',borderTop:'1px solid var(--border)',marginTop:4}}>📱 ברירת מחדל לוואטסאפ</div>
       <div style={{display:'flex',gap:6,flexWrap:'wrap',marginBottom:14}}>
         {allCols.map(c=>{const on=wd.includes(c.id);return(
           <div key={c.id} onClick={()=>setWd(p=>on?p.filter(x=>x!==c.id):[...p,c.id])}

@@ -191,7 +191,7 @@ function HomeScreen({data,onNav,recent,favorites,onToggleFav,loginRole,reports,t
 
       {/* ── BRAND DOORS ── */}
       <Reveal style={{margin:'34px 0 38px'}}>
-        <h2 className="sec-h" style={{textAlign:'center'}}>או בחר מותג</h2>
+        <h2 className="sec-h" style={{textAlign:'center'}}>או בחרו מותג</h2>
         <p className="sec-p" style={{textAlign:'center'}}>לחיצה על מותג פותחת אותו בסרגל, ומשם בוחרים קטגוריה ודגם</p>
         <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(170px,1fr))',gap:14,maxWidth:820,margin:'0 auto'}}>
           {visBrands.map((b,bi)=>{
@@ -506,7 +506,7 @@ function CartPanel({cart,data,onRemove,onClear,onClose,waDefaults}){
             ))}
           </div>
           <div style={{marginBottom:12}}>
-            <div style={{fontWeight:'bold',fontSize:12,color:'var(--sub)',marginBottom:8}}>עמודות לשליחה בווצאפ:</div>
+            <div style={{fontWeight:'bold',fontSize:12,color:'var(--sub)',marginBottom:8}}>עמודות לשליחה בוואטסאפ:</div>
             <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
               {allCols.map(c=>{const on=colSel.has(c.id);return(
                 <div key={c.id} onClick={()=>setColSel(p=>{const n=new Set(p);on?n.delete(c.id):n.add(c.id);return n;})}
@@ -518,7 +518,7 @@ function CartPanel({cart,data,onRemove,onClear,onClose,waDefaults}){
           </div>
           <div style={{display:'flex',gap:8}}>
             <button onClick={exportCartPDF} style={{flex:1,...BPr('#546e7a')}}>🖨️ PDF</button>
-            <button onClick={sendCartWA} style={{flex:1,...BPr('#25D366')}}>📱 ווצאפ</button>
+            <button onClick={sendCartWA} style={{flex:1,...BPr('#25D366')}}>📱 וואטסאפ</button>
             <button onClick={onClear} style={{...sB('#e53935'),padding:'10px 14px'}}>נקה</button>
           </div>
         </>
@@ -735,7 +735,7 @@ function PhoneMock(){
             </div>
             <div className="pm-sent"><Ic n="checkc" s={18} sw={1.9}/><span>נשלח</span></div>
             <div className="pm-sheet"><div className="t">נבחר חלק אחד</div>
-              <div className="pm-btn wa"><Ic n="send" s={16}/>שלח בווצאפ</div>
+              <div className="pm-btn wa"><Ic n="send" s={16}/>שלח בוואטסאפ</div>
               <div className="pm-btn"><Ic n="cart" s={16}/>הוסף לסל</div></div>
           </div></div>
         </div>
