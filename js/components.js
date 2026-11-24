@@ -186,7 +186,6 @@ function HomeScreen({data,onNav,recent,favorites,onToggleFav,loginRole,reports,t
             ))}
           </div>}
         </div>
-        <div className="h2-stage rise-in" style={{'--d':2}}><HeroUnit3D/></div>
       </section>
 
       {/* ── BRAND DOORS ── */}
