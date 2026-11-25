@@ -276,7 +276,16 @@ function HomeScreen({data,onNav,recent,favorites,onToggleFav,loginRole,reports,t
 }
 
 // ══════════ SIDEBAR BRAND ══════════
-function SidebarBrand({openReq,brand,sel,editor,admin,canSeeHidden,favorites,onToggleFav,onNav,onAddModel,onDelModel,onAddCat,onEditCat,onDelCat,onAddSubCat,onEditSubCat,onDelSubCat,sidebarFilter,compareList,onToggleCompare}){
+// כפתורי הזזה ▲▼ (מצב עריכה)
+function MoveBtns({onUp,onDown,first,last,light}){
+  const st=(dis)=>({background:'none',border:'none',cursor:dis?'default':'pointer',opacity:dis?.28:1,fontSize:12,lineHeight:1,padding:'6px 7px',minWidth:30,minHeight:30,color:light?'#fff':'var(--sub)'});
+  return(<span style={{display:'inline-flex',flexShrink:0}} onClick={e=>e.stopPropagation()}>
+    <button aria-label="הזז למעלה" disabled={first} style={st(first)} onClick={e=>{e.stopPropagation();onUp();}}>▲</button>
+    <button aria-label="הזז למטה" disabled={last} style={st(last)} onClick={e=>{e.stopPropagation();onDown();}}>▼</button>
+  </span>);
+}
+
+function SidebarBrand({openReq,brand,brandPos,editMode,onMoveBrand,onMoveCat,onMoveSub,onMoveModel,sel,editor,admin,canSeeHidden,favorites,onToggleFav,onNav,onAddModel,onDelModel,onAddCat,onEditCat,onDelCat,onAddSubCat,onEditSubCat,onDelSubCat,sidebarFilter,compareList,onToggleCompare}){
   const[open,setOpen]=useState(false);const[openCats,setOpenCats]=useState({});const[openSubs,setOpenSubs]=useState({});
   const[addingMod,setAddingMod]=useState(null);const[newModName,setNewModName]=useState('');
   const[editCat,setEditCat]=useState(null);const[addingCat,setAddingCat]=useState(false);const[newCatName,setNewCatName]=useState('');
@@ -342,7 +351,7 @@ function SidebarBrand({openReq,brand,sel,editor,admin,canSeeHidden,favorites,onT
     );
   };
 
-  const renderModelRow=(m,cid,scid)=>{
+  const renderModelRow=(m,cid,scid,mi,mlen)=>{
     const inCompare=compareList&&compareList.some(x=>x.mid===m.id);
     return(
       <div key={m.id} className="sb-model" style={{display:'flex',alignItems:'center',borderBottom:'1px solid var(--border)'}}>
@@ -362,7 +371,8 @@ function SidebarBrand({openReq,brand,sel,editor,admin,canSeeHidden,favorites,onT
           </button>
         )}
         <button onClick={()=>onToggleFav(m.id)} title={favorites.has(m.id)?'הסר ממועדפים':'הוסף למועדפים'} aria-label={favorites.has(m.id)?'הסר ממועדפים':'הוסף למועדפים'} style={{background:'none',border:'none',cursor:'pointer',padding:'0 5px',display:'flex'}}><Ic n="star" s={16} fill={favorites.has(m.id)?'#f5b301':'none'} style={{color:favorites.has(m.id)?'#f5b301':'var(--sub)'}}/></button>
-        {admin&&<button onClick={()=>onDelModel(cid,m.id,scid)} style={{background:'none',border:'none',color:'#e53935',cursor:'pointer',fontSize:13,padding:'0 8px'}}>🗑</button>}
+        {admin&&editMode&&!sidebarFilter&&<MoveBtns first={mi===0} last={mi===mlen-1} onUp={()=>onMoveModel(cid,scid,m.id,-1)} onDown={()=>onMoveModel(cid,scid,m.id,1)}/>}
+        {admin&&editMode&&<button onClick={()=>onDelModel(cid,m.id,scid)} aria-label="העבר לסל המחזור" style={{background:'none',border:'none',color:'#e53935',cursor:'pointer',fontSize:15,padding:'4px 10px',minHeight:34}}>🗑</button>}
       </div>
     );
   };
@@ -372,10 +382,11 @@ function SidebarBrand({openReq,brand,sel,editor,admin,canSeeHidden,favorites,onT
       <div className="sb-head" onClick={()=>setOpen(v=>!v)} style={{padding:'11px 14px',background:brand.color,color:'#fff',display:'flex',alignItems:'center',cursor:'pointer',userSelect:'none',gap:6}}>
         <span style={{flex:1,fontWeight:'bold',fontSize:14}}>{brand.name}</span>
         {brand.hidden && <span title="מותג מוסתר מצופים" style={{fontSize:11,opacity:.9}}>🙈</span>}
+        {admin&&editMode&&brandPos&&<MoveBtns light first={brandPos.first} last={brandPos.last} onUp={()=>onMoveBrand(-1)} onDown={()=>onMoveBrand(1)}/>}
         <span style={{display:'flex',opacity:.85}}><Ic n={open?'chevu':'chevd'} s={16}/></span>
       </div>
       {open&&<div className="sb-body">
-        {brand.categories.map(c=>{
+        {brand.categories.map((c,ci)=>{
           const q=sidebarFilter?sidebarFilter.toLowerCase():'';
           const mm=m=>!q||m.name.toLowerCase().includes(q)||(m.synonyms||[]).some(s=>s.toLowerCase().includes(q));
           const visibleModels=(sidebarFilter?c.models.filter(mm):c.models).filter(m=>canSeeHidden||!m.hidden);
@@ -397,15 +408,16 @@ function SidebarBrand({openReq,brand,sel,editor,admin,canSeeHidden,favorites,onT
                      <span style={{flex:1,fontWeight:600,color:'var(--text)'}}>{c.name}</span><span style={{display:'flex'}}><Ic n={openCats[c.id]?'chevu':'chevd'} s={15}/></span>
                    </div>
                 }
-                {admin&&editCat?.id!==c.id&&(
-                  <div style={{display:'flex',flexShrink:0,paddingLeft:4}}>
+                {admin&&editMode&&editCat?.id!==c.id&&(
+                  <div style={{display:'flex',flexShrink:0,paddingLeft:4,alignItems:'center'}}>
+                    {!sidebarFilter&&<MoveBtns first={ci===0} last={ci===brand.categories.length-1} onUp={()=>onMoveCat(c.id,-1)} onDown={()=>onMoveCat(c.id,1)}/>}
                     <button onClick={e=>{e.stopPropagation();startAdd(c.id,null);}} title="הוסף דגם" style={{background:'none',border:'none',color:brand.color,cursor:'pointer',fontSize:20,fontWeight:'bold',padding:'2px 6px',lineHeight:1}}>+</button>
                     <button onClick={e=>{e.stopPropagation();setAddingSub(c.id);setNewSubName('');}} title="הוסף תת-קטגוריה" style={{background:'none',border:'none',color:'#7b1fa2',cursor:'pointer',fontSize:14,padding:'2px 4px'}}>📂</button>
                     <button onClick={e=>{e.stopPropagation();setEditCat({id:c.id,name:c.name});}} style={{background:'none',border:'none',color:'var(--sub)',cursor:'pointer',fontSize:13,padding:'2px 4px'}}>✏</button>
                     <button onClick={e=>{e.stopPropagation();onDelCat(c.id);}} style={{background:'none',border:'none',color:'#e53935',cursor:'pointer',fontSize:13,padding:'2px 5px'}}>🗑</button>
                   </div>
                 )}
-                {editor&&!admin&&editCat?.id!==c.id&&(
+                {editor&&!admin&&editMode&&editCat?.id!==c.id&&(
                   <button onClick={e=>{e.stopPropagation();startAdd(c.id,null);}} style={{background:'none',border:'none',color:brand.color,cursor:'pointer',fontSize:20,fontWeight:'bold',padding:'2px 8px',lineHeight:1}}>+</button>
                 )}
               </div>
@@ -421,9 +433,9 @@ function SidebarBrand({openReq,brand,sel,editor,admin,canSeeHidden,favorites,onT
               )}
               {(openCats[c.id]||sidebarFilter)&&<>
                 {renderAddBox(c.id,null)}
-                {visibleModels.map(m=>renderModelRow(m,c.id,null))}
+                {visibleModels.map((m,mi)=>renderModelRow(m,c.id,null,mi,visibleModels.length))}
                 {!visibleModels.length&&!sidebarFilter&&!subCats.length&&<div style={{padding:'7px 26px',color:'var(--sub)',fontSize:12}}>אין דגמים</div>}
-                {(sidebarFilter?visibleSubs:subCats).map(sc=>{
+                {(sidebarFilter?visibleSubs:subCats).map((sc,si)=>{
                   const scModels=(sidebarFilter?sc.models.filter(mm):sc.models).filter(m=>canSeeHidden||!m.hidden);
                   if(sidebarFilter&&!scModels.length)return null;
                   return(
@@ -441,20 +453,21 @@ function SidebarBrand({openReq,brand,sel,editor,admin,canSeeHidden,favorites,onT
                              <span>📂</span><span style={{flex:1,fontWeight:'600'}}>{sc.name}</span><span style={{fontSize:10}}>{openSubs[sc.id]?'▲':'▼'}</span>
                            </div>
                         }
-                        {admin&&editSub?.id!==sc.id&&(
-                          <div style={{display:'flex',flexShrink:0,paddingLeft:4}}>
+                        {admin&&editMode&&editSub?.id!==sc.id&&(
+                          <div style={{display:'flex',flexShrink:0,paddingLeft:4,alignItems:'center'}}>
+                            {!sidebarFilter&&<MoveBtns first={si===0} last={si===subCats.length-1} onUp={()=>onMoveSub(c.id,sc.id,-1)} onDown={()=>onMoveSub(c.id,sc.id,1)}/>}
                             <button onClick={e=>{e.stopPropagation();startAdd(c.id,sc.id);}} style={{background:'none',border:'none',color:brand.color,cursor:'pointer',fontSize:18,fontWeight:'bold',padding:'2px 5px',lineHeight:1}}>+</button>
                             <button onClick={e=>{e.stopPropagation();setEditSub({id:sc.id,name:sc.name});}} style={{background:'none',border:'none',color:'var(--sub)',cursor:'pointer',fontSize:12,padding:'2px 4px'}}>✏</button>
                             <button onClick={e=>{e.stopPropagation();onDelSubCat(c.id,sc.id);}} style={{background:'none',border:'none',color:'#e53935',cursor:'pointer',fontSize:12,padding:'2px 5px'}}>🗑</button>
                           </div>
                         )}
-                        {editor&&!admin&&editSub?.id!==sc.id&&(
+                        {editor&&!admin&&editMode&&editSub?.id!==sc.id&&(
                           <button onClick={e=>{e.stopPropagation();startAdd(c.id,sc.id);}} style={{background:'none',border:'none',color:brand.color,cursor:'pointer',fontSize:18,fontWeight:'bold',padding:'2px 8px',lineHeight:1}}>+</button>
                         )}
                       </div>
                       {(openSubs[sc.id]||sidebarFilter)&&<>
                         {renderAddBox(c.id,sc.id)}
-                        {scModels.map(m=>renderModelRow(m,c.id,sc.id))}
+                        {scModels.map((m,mi)=>renderModelRow(m,c.id,sc.id,mi,scModels.length))}
                         {!scModels.length&&!sidebarFilter&&<div style={{padding:'7px 36px',color:'var(--sub)',fontSize:11}}>אין דגמים</div>}
                       </>}
                     </div>
@@ -464,7 +477,7 @@ function SidebarBrand({openReq,brand,sel,editor,admin,canSeeHidden,favorites,onT
             </div>
           );
         })}
-        {admin&&(addingCat
+        {admin&&editMode&&(addingCat
           ?<div style={{padding:'6px 10px',background:'var(--row2)',display:'flex',gap:6}}>
              <input value={newCatName} autoFocus onChange={e=>setNewCatName(e.target.value)}
                onKeyDown={e=>{if(e.key==='Enter'&&newCatName.trim()){onAddCat(newCatName.trim());setNewCatName('');setAddingCat(false);}if(e.key==='Escape')setAddingCat(false);}}

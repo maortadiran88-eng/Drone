@@ -49,6 +49,8 @@ function App() {
   const [histData,       setHistData]       = useState([]);
   const [showHistory,    setShowHistory]    = useState(false);
   const [brandMgr,       setBrandMgr]       = useState(false);
+  const [sbEdit,         setSbEdit]         = useState(false);
+  const [showTrash,      setShowTrash]      = useState(false);
   const [menuOpen,       setMenuOpen]       = useState(false);
   const [searchOpen,     setSearchOpen]     = useState(false);
   const [chPwd,          setChPwd]          = useState(false);
@@ -138,8 +140,15 @@ function App() {
           setSaving('saving');
           const snap = latestData.current;
           // Capture + clear BEFORE awaiting — edits made mid-save go to a fresh Set
-          const midsToSave = changedMids.current;
-          changedMids.current = new Set();
+          // רק סימונים של דגמים שנמצאים בצילום הזה נצרכים; השאר (למשל דגם ששוחזר ברגע שהצילום כבר נלקח) נשארים לשמירה הבאה
+          let midsToSave = changedMids.current;
+          try {
+            const inSnap = new Set(snap ? syncAllModels(snap).map(x=>x.m.id) : []);
+            if (snap) {
+              midsToSave = new Set([...changedMids.current].filter(id => inSnap.has(id)));
+              changedMids.current = new Set([...changedMids.current].filter(id => !inSnap.has(id)));
+            } else changedMids.current = new Set();
+          } catch(e) { changedMids.current = new Set(); }
           try {
             // merge-save in transactions (see sync.js / firebase.js): two editors saving together both keep their changes
             const res = await withTimeout(fbSave(snap, midsToSave), 90000);
@@ -363,8 +372,15 @@ function App() {
   };
 
   const bulkDeleteModels = async sels => {
-    if(!confirm(`למחוק ${sels.length} דגמים לצמיתות?`))return;
+    if(!confirm(`להעביר ${sels.length} דגמים לסל המחזור?`))return;
     fbSaveSnapshot(data, loginLabel||loginRole, `לפני מחיקת ${sels.length} דגמים`);
+    try {
+      const bt = gid();
+      for (const s of sels) {
+        const b=data.brands.find(x=>x.id===s.bid), c=b?.categories.find(x=>x.id===s.cid), m=c?.models.find(x=>x.id===s.mid);
+        if (m) await trashPut({kind:'model',name:m.name,bid:b.id,bname:b.name,cid:c.id,cname:c.name,scid:null,scname:'',idx:c.models.findIndex(x=>x.id===m.id),batch:bt,deletedBy:loginLabel||loginRole}, JSON.parse(JSON.stringify(m)));
+      }
+    } catch(e) { if(!confirm('לא הצלחתי לשמור עותק בסל המחזור. למחוק בכל זאת?')) return; }
 
     // Build every Firestore operation (part-doc delete + alert log) up front,
     // then send them as chunked db.batch() writes instead of firing one
@@ -394,6 +410,50 @@ function App() {
     mut(d=>({...d,brands:d.brands.map(b=>({...b,categories:b.categories.map(c=>({...c,models:c.models.filter(m=>!sels.some(s=>s.mid===m.id&&s.bid===b.id&&s.cid===c.id))}))}))}));
     if(sels.some(s=>s.mid===sel?.mid))setSel(null);
     logAction('מחיקה מרובה',{count:sels.length});
+  };
+
+  // ── שינוי סדר (מצב עריכה בסרגל) ──
+  const swapById = (arr,id,dir) => { const i=arr.findIndex(x=>x.id===id), j=i+dir; if(i<0||j<0||j>=arr.length) return arr; const n=arr.slice(); [n[i],n[j]]=[n[j],n[i]]; return n; };
+  const moveBrandPos = (bid,dir) => mut(d=>({...d,brands:swapById(d.brands,bid,dir)}));
+  const moveCatPos   = (bid,cid,dir) => mut(d=>({...d,brands:d.brands.map(b=>b.id!==bid?b:{...b,categories:swapById(b.categories,cid,dir)})}));
+  const moveSubPos   = (bid,cid,scid,dir) => mut(d=>({...d,brands:d.brands.map(b=>b.id!==bid?b:{...b,categories:b.categories.map(c=>c.id!==cid?c:{...c,subCategories:swapById(c.subCategories||[],scid,dir)})})}));
+  const moveModelPos = (bid,cid,scid,mid,dir) => mut(d=>({...d,brands:d.brands.map(b=>b.id!==bid?b:{...b,categories:b.categories.map(c=>c.id!==cid?c:(scid
+    ? {...c,subCategories:(c.subCategories||[]).map(sc=>sc.id!==scid?sc:{...sc,models:swapById(sc.models,mid,dir)})}
+    : {...c,models:swapById(c.models,mid,dir)}))})}));
+
+  // ── סל מחזור: שחזור פריט למקומו (דגם / קטגוריה / תת-קטגוריה עם הדגמים שבהם) ──
+  const restoreFromTrash = async (rec, related) => {
+    const brand = data.brands.find(b=>b.id===rec.bid);
+    if (!brand) { alert('המותג "'+rec.bname+'" כבר לא קיים, לא ניתן לשחזר.'); return false; }
+    const recs = rec.kind==='model' ? [rec] : [rec,...related];
+    const loaded = [];
+    for (const r of recs) loaded.push({r, p: await trashRead(r)});
+    // חשוב: לסמן את הדגמים לשמירה לפני ה-mut (השמירה קוראת את הסימון ברגע שהיא מתחילה), אחרת מסמך החלקים לא נכתב מחדש
+    loaded.forEach(({r,p})=>{ if(r.kind==='model') changedMids.current.add(p.id); });
+    mut(d=>({...d,brands:d.brands.map(bb=>{
+      if (bb.id!==rec.bid) return bb;
+      let cats = bb.categories.slice();
+      const ensureCat = r => { if(!cats.some(x=>x.id===r.cid)) cats=[...cats,{id:r.cid,name:r.cname||'שוחזר',models:[],subCategories:[]}]; };
+      for (const {r,p} of loaded) {
+        if (r.kind==='category') { if(!cats.some(x=>x.id===p.id)) cats=[...cats,{id:p.id,name:p.name,models:[],subCategories:(p.subCategories||[]).map(s=>({id:s.id,name:s.name,models:[]}))}]; }
+        else if (r.kind==='subcategory') { ensureCat(r); cats=cats.map(c=>c.id!==r.cid?c:((c.subCategories||[]).some(s=>s.id===p.id)?c:{...c,subCategories:[...(c.subCategories||[]),{id:p.id,name:p.name,models:[]}]})); }
+      }
+      for (const {r,p} of loaded) {
+        if (r.kind!=='model') continue;
+        ensureCat(r);
+        const ins = arr => { if(arr.some(x=>x.id===p.id)) return arr; const at=Math.min(r.idx==null?arr.length:r.idx,arr.length); return [...arr.slice(0,at),p,...arr.slice(at)]; };
+        cats = cats.map(c=>{
+          if (c.id!==r.cid) return c;
+          if (r.scid) { let subs=c.subCategories||[]; if(!subs.some(s=>s.id===r.scid)) subs=[...subs,{id:r.scid,name:r.scname||'שוחזר',models:[]}]; return {...c,subCategories:subs.map(s=>s.id!==r.scid?s:{...s,models:ins(s.models)})}; }
+          return {...c,models:ins(c.models)};
+        });
+      }
+      return {...bb,categories:cats};
+    })}));
+    for (const r of recs) await trashRemove(r);
+    logAlert('add','שוחזר מסל המחזור: '+rec.name+' ('+rec.bname+')');
+    alert('✅ שוחזר: '+rec.name);
+    return true;
   };
 
   const duplicateModel = (bid,cid,mid) => {
@@ -638,6 +698,7 @@ function App() {
                   <button className="menu-item" onClick={()=>{setShowDashboard(true);setMenuOpen(false);}}><span className="ic"><Ic n="chart" s={17}/></span>דשבורד</button>
                 {admin&&<button className="menu-item" onClick={()=>{setShowMakatReview(true);setMenuOpen(false);}}><span className="ic"><Ic n="checkc" s={17}/></span>בדיקת מק"טים</button>}
                 {admin&&<button className="menu-item" onClick={()=>{setShowQuality(true);setMenuOpen(false);}}><span className="ic"><Ic n="chart" s={17}/></span>בדיקת איכות נתונים</button>}
+                {admin&&<button className="menu-item" onClick={()=>{setShowTrash(true);setMenuOpen(false);}}><span className="ic"><Ic n="trash" s={17}/></span>סל מחזור</button>}
                 <div className="menu-divider"/>
                 <div className="menu-label">תוכן</div>
                   <button className="menu-item" onClick={()=>{setShowNewsEditor(true);setMenuOpen(false);}}><span className="ic"><Ic n="news" s={17}/></span>עריכת חדשות</button>
@@ -730,9 +791,15 @@ function App() {
                 {sidebarFilter&&<button onClick={()=>setSidebarFilter('')} style={{position:'absolute',left:6,top:'50%',transform:'translateY(-50%)',background:'none',border:'none',cursor:'pointer',color:'#999',fontSize:13}}>✕</button>}
               </div>
             </div>
+            {editor&&(
+              <div className="sb-tools">
+                <button className={'sb-tool'+(sbEdit?' on':'')} onClick={()=>setSbEdit(v=>!v)} aria-pressed={sbEdit}><Ic n="edit" s={15}/>{sbEdit?'סיום עריכה':'עריכה'}</button>
+                {admin&&<button className="sb-tool" onClick={()=>setShowTrash(true)}><Ic n="trash" s={15}/>סל מחזור</button>}
+              </div>
+            )}
             <div style={{flex:1,overflowY:'auto'}}>
               {data.brands.filter(b=>editor||!b.hidden).map(b=>(
-                <SidebarBrand key={b.id} openReq={openBrandReq} brand={b} sel={sel} editor={editor} admin={admin} canSeeHidden={editor}
+                <SidebarBrand key={b.id} openReq={openBrandReq} brand={b} brandPos={{first:data.brands[0]?.id===b.id,last:data.brands[data.brands.length-1]?.id===b.id}} editMode={sbEdit} onMoveBrand={dir=>moveBrandPos(b.id,dir)} onMoveCat={(cid,dir)=>moveCatPos(b.id,cid,dir)} onMoveSub={(cid,scid,dir)=>moveSubPos(b.id,cid,scid,dir)} onMoveModel={(cid,scid,mid,dir)=>moveModelPos(b.id,cid,scid,mid,dir)} sel={sel} editor={editor} admin={admin} canSeeHidden={editor}
                   favorites={favorites} onToggleFav={toggleFav} onNav={nav}
                   sidebarFilter={sidebarFilter}
                   compareList={compareList}
@@ -747,11 +814,15 @@ function App() {
                   }}
                   onAddModel={(cid,name,scid)=>handleAddModel(b,cid,name,scid)}
                   onDelModel={async(cid,mid,scid)=>{
-                    if(!confirm('למחוק?'))return;
+                    if(!confirm('להעביר את הדגם לסל המחזור?'))return;
                     const catObj=b.categories.find(c=>c.id===cid);
                     const sourceModels=scid?(catObj?.subCategories||[]).find(sc=>sc.id===scid)?.models:catObj?.models;
                     const m=sourceModels&&sourceModels.find(m=>m.id===mid);
                     const savedModel=m?JSON.parse(JSON.stringify(m)):null;
+                    if(savedModel){
+                      try{ await trashPut({kind:'model',name:m.name,bid:b.id,bname:b.name,cid,cname:catObj?.name||'',scid:scid||null,scname:scid?((catObj?.subCategories||[]).find(sc=>sc.id===scid)||{}).name||'':'',idx:sourceModels.findIndex(x=>x.id===mid),batch:gid(),deletedBy:loginLabel||loginRole},savedModel); }
+                      catch(e){ if(!confirm('לא הצלחתי לשמור עותק בסל המחזור. למחוק בכל זאת?'))return; }
+                    }
                     fbSaveSnapshot(data,loginLabel||loginRole,'לפני מחיקת דגם');
                     if(m) logAlert('delete',`נמחק דגם: ${m.name} (${b.name})`);
                     try{await db.collection('parts').doc(mid).delete();}catch{}
@@ -774,10 +845,32 @@ function App() {
                   }}
                   onAddCat={name=>mut(d=>({...d,brands:d.brands.map(bb=>bb.id!==b.id?bb:{...bb,categories:[...bb.categories,{id:gid(),name,models:[],subCategories:[]}]})}))}
                   onEditCat={(cid,name)=>mut(d=>({...d,brands:d.brands.map(bb=>bb.id!==b.id?bb:{...bb,categories:bb.categories.map(c=>c.id!==cid?c:{...c,name})})}))}
-                  onDelCat={cid=>{if(!confirm('למחוק?'))return;mut(d=>({...d,brands:d.brands.map(bb=>bb.id!==b.id?bb:{...bb,categories:bb.categories.filter(c=>c.id!==cid)})}));}}
+                  onDelCat={async cid=>{
+                    const c=b.categories.find(x=>x.id===cid); if(!c)return;
+                    const subs=c.subCategories||[];
+                    const n=c.models.length+subs.reduce((t,sc)=>t+sc.models.length,0);
+                    if(!confirm(`להעביר את הקטגוריה "${c.name}"${n?` ו-${n} דגמים שבה`:''} לסל המחזור?`))return;
+                    try{
+                      const list=[...c.models.map((m,i)=>({m:JSON.parse(JSON.stringify(m)),scid:null,scname:'',idx:i})),
+                        ...subs.flatMap(sc=>sc.models.map((m,i)=>({m:JSON.parse(JSON.stringify(m)),scid:sc.id,scname:sc.name,idx:i})))];
+                      await trashGroup('category',{bid:b.id,bname:b.name,cid:c.id,cname:c.name,idx:b.categories.findIndex(x=>x.id===cid),by:loginLabel||loginRole},{id:c.id,name:c.name,subCategories:subs.map(sc=>({id:sc.id,name:sc.name}))},list);
+                    }catch(e){ if(!confirm('לא הצלחתי לשמור עותק בסל המחזור. למחוק בכל זאת?'))return; }
+                    fbSaveSnapshot(data,loginLabel||loginRole,'לפני מחיקת קטגוריה');
+                    logAlert('delete',`נמחקה קטגוריה: ${c.name} (${b.name})`);
+                    mut(d=>({...d,brands:d.brands.map(bb=>bb.id!==b.id?bb:{...bb,categories:bb.categories.filter(x=>x.id!==cid)})}));
+                  }}
                   onAddSubCat={(cid,name)=>mut(d=>({...d,brands:d.brands.map(bb=>bb.id!==b.id?bb:{...bb,categories:bb.categories.map(c=>c.id!==cid?c:{...c,subCategories:[...(c.subCategories||[]),{id:gid(),name,models:[]}]})})}))}
                   onEditSubCat={(cid,scid,name)=>mut(d=>({...d,brands:d.brands.map(bb=>bb.id!==b.id?bb:{...bb,categories:bb.categories.map(c=>c.id!==cid?c:{...c,subCategories:(c.subCategories||[]).map(sc=>sc.id!==scid?sc:{...sc,name})})})}))}
-                  onDelSubCat={(cid,scid)=>{if(!confirm('למחוק תת-קטגוריה?'))return;mut(d=>({...d,brands:d.brands.map(bb=>bb.id!==b.id?bb:{...bb,categories:bb.categories.map(c=>c.id!==cid?c:{...c,subCategories:(c.subCategories||[]).filter(sc=>sc.id!==scid)})})}));}}
+                  onDelSubCat={async(cid,scid)=>{
+                    const c=b.categories.find(x=>x.id===cid); const sc=c&&(c.subCategories||[]).find(x=>x.id===scid); if(!sc)return;
+                    if(!confirm(`להעביר את תת-הקטגוריה "${sc.name}"${sc.models.length?` ו-${sc.models.length} דגמים שבה`:''} לסל המחזור?`))return;
+                    try{
+                      const list=sc.models.map((m,i)=>({m:JSON.parse(JSON.stringify(m)),scid:sc.id,scname:sc.name,idx:i}));
+                      await trashGroup('subcategory',{bid:b.id,bname:b.name,cid:c.id,cname:c.name,scid:sc.id,scname:sc.name,idx:(c.subCategories||[]).findIndex(x=>x.id===scid),by:loginLabel||loginRole},{id:sc.id,name:sc.name},list);
+                    }catch(e){ if(!confirm('לא הצלחתי לשמור עותק בסל המחזור. למחוק בכל זאת?'))return; }
+                    fbSaveSnapshot(data,loginLabel||loginRole,'לפני מחיקת תת-קטגוריה');
+                    mut(d=>({...d,brands:d.brands.map(bb=>bb.id!==b.id?bb:{...bb,categories:bb.categories.map(x=>x.id!==cid?x:{...x,subCategories:(x.subCategories||[]).filter(s=>s.id!==scid)})})}));
+                  }}
                 />
               ))}
             </div>
@@ -868,6 +961,7 @@ function App() {
       {/* PANELS */}
       {showCart     &&<CartPanel cart={cart} data={data} onRemove={removeFromCart} onClear={clearCart} onClose={()=>setShowCart(false)} waDefaults={data.waDefaults||['nameHe','tadPn']}/>}
       {showCompare  &&<ComparePanel compareList={compareList} data={data} onClose={()=>setShowCompare(false)} onRemove={mid=>setCompareList(p=>p.filter(x=>x.mid!==mid))}/>}
+      {showTrash&&admin&&<TrashModal onClose={()=>setShowTrash(false)} onRestore={restoreFromTrash}/>}
       {showQuality&&admin&&<DataQualityPanel data={data} onClose={()=>setShowQuality(false)} onOpen={(b,c,m)=>nav(b,c,m)}/>}
       {showMakatReview&&admin&&<MakatReviewPanel data={data} onClose={()=>setShowMakatReview(false)} approvals={makatApprovals}
         onApprove={key=>{const n={...makatApprovals,[key]:'ok'};setMakatApprovals(n);try{localStorage.setItem('makat_approvals',JSON.stringify(n));}catch{}}}

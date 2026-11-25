@@ -1060,6 +1060,14 @@ html.lite .pc3,html.lite .dg-card,html.lite .pk-card,html.lite .cp-row,html.lite
   .tt::before,.tt::after{display:none!important;content:none!important}
 }
 
+/* ─── סרגל המותגים: כלי עריכה וסל מחזור ─── */
+.sb-tools{display:flex;gap:8px;padding:8px 10px;border-bottom:1px solid var(--border);flex-shrink:0}
+.sb-tool{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:36px;padding:6px 10px;border-radius:12px;border:1px solid var(--border2);
+  background:var(--card2);color:var(--text);font:600 12.5px/1 inherit;font-family:inherit;cursor:pointer;transition:background-color .15s ease,border-color .15s ease,color .15s ease}
+.sb-tool:hover{border-color:var(--cyan)}
+.sb-tool.on{background:var(--grad-brand);color:#fff;border-color:transparent}
+.dark .sb-tool.on{color:#04141a}
+
 /* ─── דף הבית: ממורכז בלי תמונת התלת־ממד ─── */
 .h2-hero{grid-template-columns:minmax(0,1fr)!important;max-width:760px;margin:0 auto;padding-top:18px}
 .h2-copy{text-align:center}
@@ -1120,6 +1128,6 @@ html.tech .air-canvas{display:none}
     window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
   }
 </script>
-<script src="dist/app.js?v=20261124100445"></script>
+<script src="dist/app.js?v=20261124202733"></script>
 </body>
 </html>

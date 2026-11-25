@@ -4,7 +4,7 @@
 set -e
 cd "$(dirname "$0")"
 [ -d .build/node_modules/esbuild ] || (mkdir -p .build && cd .build && npm init -y >/dev/null && npm i esbuild >/dev/null)
-ORDER="toast extras icons constants sync firebase offline helpers v2 components modals ModelView compare makat_review quality boundary App"
+ORDER="toast extras icons constants sync firebase offline helpers v2 components modals ModelView compare makat_review quality trash boundary App"
 : > dist/app.src.js
 for f in $ORDER; do
   echo "/* ── $f.js ── */" >> dist/app.src.js
