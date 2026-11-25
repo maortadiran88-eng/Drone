@@ -5,6 +5,7 @@ const TRASH_CHUNK = 350000;           // תווים למסמך (בטוח מתח�
 const TRASH_DAYS  = 30;
 
 async function trashPut(rec, payload){
+  if (window.__LOCAL_MODE__) return null;      // במצב עבודה מקומית אין שרת; ביטול (Undo) זמין כרגיל
   const id = gid();
   const json = JSON.stringify(payload == null ? null : payload);
   const parts = []; for (let i = 0; i < json.length; i += TRASH_CHUNK) parts.push(json.slice(i, i + TRASH_CHUNK));
@@ -33,6 +34,7 @@ async function trashRemove(rec){
 }
 // מחיקת קטגוריה / תת-קטגוריה: כל דגם נשמר בנפרד + רשומת "מעטפת" של הקטגוריה (אותו batch)
 async function trashGroup(kind, ctx, shell, models){
+  if (window.__LOCAL_MODE__) return;
   const batch = gid();
   const base = {bid:ctx.bid, bname:ctx.bname, cid:ctx.cid, cname:ctx.cname, batch, deletedBy:ctx.by};
   for (const {m, scid, scname, idx} of models)

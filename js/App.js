@@ -50,6 +50,10 @@ function App() {
   const [showHistory,    setShowHistory]    = useState(false);
   const [brandMgr,       setBrandMgr]       = useState(false);
   const [sbEdit,         setSbEdit]         = useState(false);
+  const [localMode,      setLocalMode]      = useState(false);
+  const [localInfo,      setLocalInfo]      = useState(null);
+  const [showBackup,     setShowBackup]     = useState(false);
+  const localModeRef = useRef(false);
   const [showTrash,      setShowTrash]      = useState(false);
   const [menuOpen,       setMenuOpen]       = useState(false);
   const [searchOpen,     setSearchOpen]     = useState(false);
@@ -100,16 +104,28 @@ function App() {
   useEffect(() => { const t=setInterval(()=>setNow(new Date()),1000); return()=>clearInterval(t); }, []);
 
   useEffect(() => {
-    fbLoad().then(d => { setData(d||INIT()); setLoaded(true); setLoadErr(false); OFFLINE_ST.fromCache = false; }).catch(() => {
-      setLoadErr(true);
-      offlineLoad().then(c => {
-        if (c) { OFFLINE_ST.fromCache = true; OFFLINE_ST.savedAt = c.savedAt; setData(c.data); }
-        else setData(INIT());
-        setLoaded(true);
+    const loadFromServer = () => {
+      fbLoad().then(d => { setData(d||INIT()); setLoaded(true); setLoadErr(false); OFFLINE_ST.fromCache = false; }).catch(() => {
+        setLoadErr(true);
+        offlineLoad().then(c => {
+          if (c) { OFFLINE_ST.fromCache = true; OFFLINE_ST.savedAt = c.savedAt; setData(c.data); }
+          else setData(INIT());
+          setLoaded(true);
+        });
       });
+      fbGetNews().then(docs => setNewsItems(docs.map(d=>d.text)));
+      fbGetBroadcast().then(b => { if(b&&b.active) setBroadcast(b.msg); });
+    };
+    let wasLocal = false; try { wasLocal = localStorage.getItem('ac_localmode') === '1'; } catch(e) {}
+    if (!wasLocal) { loadFromServer(); return; }
+    // נשארנו במצב עבודה מקומית: טוענים את העבודה השמורה במחשב ולא מהשרת (כדי לא לדרוס אותה בטעות)
+    workLoad().then(w => {
+      if (!w) { try { localStorage.removeItem('ac_localmode'); } catch(e) {} loadFromServer(); return; }
+      localModeRef.current = true; window.__LOCAL_MODE__ = true; setLocalMode(true);
+      setLocalInfo({savedAt:w.savedAt, fileName:'', fileOk:false});
+      localInit().then(n => setLocalInfo(i => ({...(i||{}), fileName:n})));
+      setData(w.data); setLoaded(true);
     });
-    fbGetNews().then(docs => setNewsItems(docs.map(d=>d.text)));
-    fbGetBroadcast().then(b => { if(b&&b.active) setBroadcast(b.msg); });
   }, []);
 
   // Load alerts/reports when editor logs in
@@ -130,7 +146,18 @@ function App() {
   const withTimeout = (p, ms) => Promise.race([p, new Promise((_,rej) => setTimeout(() => {
     rej(new Error('Firebase לא אישר את השמירה תוך '+Math.round(ms/1000)+' שניות. השינויים שמורים בזיכרון, והמערכת תנסה שוב אוטומטית. אל תרענן את הדף.'));
   }, ms))]);
+  // שמירה מקומית (מצב עבודה מקומית): ל-IndexedDB ולקובץ במחשב, לא לשרת
+  const runLocalSave = async () => {
+    const snap = latestData.current; if (!snap) return;
+    try {
+      setSaving('saving');
+      const info = await localPersist(snap);
+      dirtyRef.current = false; setSaving('saved'); setSavedAt(new Date());
+      setLocalInfo({...info, fileName: LOCAL_ST.fileName});
+    } catch(e) { setSaving('error'); setSaveErr('השמירה במחשב נכשלה: ' + (e && e.message || e)); }
+  };
   const runSave = () => {
+    if (localModeRef.current) return runLocalSave();
     if (saveInFlight.current) { saveAgain.current = true; return savePromise.current; }
     saveInFlight.current = true;
     savePromise.current = (async () => {
@@ -291,6 +318,18 @@ function App() {
     if (ro) ro.observe(headerRef.current);
     return () => { window.removeEventListener('resize', onR); if (ro) ro.disconnect(); };
   },[loginRole, loaded]);
+  // תזכורת גיבוי למנהל: אם לא הורד גיבוי מלא מעל שבועיים (פעם ביום לכל היותר)
+  useEffect(()=>{
+    if (!admin || !loaded || localMode) return;
+    try {
+      const day = 864e5, last = Number(localStorage.getItem('ac_last_backup')||0), nag = Number(localStorage.getItem('ac_backup_nag')||0);
+      if (Date.now()-nag < day) return;
+      if (!last || Date.now()-last > 14*day) {
+        localStorage.setItem('ac_backup_nag', String(Date.now()));
+        setTimeout(()=>{ window.toast && window.toast(last ? '💾 עברו '+Math.floor((Date.now()-last)/day)+' ימים מהגיבוי האחרון. תפריט ⋮ ← גיבוי ועבודה במחשב' : '💾 עדיין לא הורדת גיבוי מלא. תפריט ⋮ ← גיבוי ועבודה במחשב'); }, 3500);
+      }
+    } catch(e) {}
+  },[admin,loaded]);
   const deepLinkDone = useRef(false);
   useEffect(()=>{
     if (deepLinkDone.current || !data || !loginRole) return;
@@ -456,6 +495,45 @@ function App() {
     return true;
   };
 
+  // ── מצב עבודה מקומית ──
+  const startLocalMode = async (d) => {
+    const info = await localPersist(d);
+    try { localStorage.setItem('ac_localmode','1'); } catch(e) {}
+    localModeRef.current = true; window.__LOCAL_MODE__ = true; setLocalMode(true);
+    setLocalInfo({...info, fileName: LOCAL_ST.fileName});
+    setLoadErr(false); OFFLINE_ST.fromCache = false;
+    if (d !== data) { latestData.current = d; setData(d); setSel(null); }
+    localInit().then(n => setLocalInfo(i => ({...(i||{}), fileName:n})));
+  };
+  const pickLocalFile = async () => {
+    try {
+      const name = await localPickFile();
+      const info = await localPersist(latestData.current || data);
+      setLocalInfo({...info, fileName:name});
+      alert('✅ נבחר הקובץ '+name+'. כל שמירה תתעדכן גם בו');
+    } catch(e) { if (!(e && e.name === 'AbortError')) alert('לא ניתן לבחור קובץ בדפדפן הזה'); }
+  };
+  const uploadLocalToServer = async () => {
+    if (!confirm('להעלות את העבודה המקומית לשרת?\nמצב השרת הנוכחי יישמר בהיסטוריה (גרסאות) ויוחלף בעבודה המקומית.')) return;
+    try {
+      const local = latestData.current || data;
+      await localPersist(local);                         // עותק בטוח לפני כל דבר
+      const server = await fbLoad();                     // קובע בסיס מיזוג מול השרת ומאשר שמירה
+      try { await fbSaveSnapshot(server, (loginLabel||loginRole)+' (לפני העלאה ממצב מקומי)', 'לפני העלאה ממצב עבודה מקומית'); } catch(e) {}
+      localModeRef.current = false; window.__LOCAL_MODE__ = false; setLocalMode(false);
+      try { localStorage.removeItem('ac_localmode'); } catch(e) {}
+      changedMids.current = new Set(syncAllModels(local).map(x=>x.m.id));
+      setLoadErr(false); OFFLINE_ST.fromCache = false;
+      setData({...local});                               // אובייקט חדש כדי שהשמירה האוטומטית תרוץ
+      alert('✅ העבודה המקומית הועלתה לשרת');
+    } catch(e) { alert('לא ניתן להתחבר לשרת, העבודה נשארת מקומית ושמורה במחשב.\n('+(e && e.message || e)+')'); }
+  };
+  const discardLocalMode = () => {
+    if (!confirm('לבטל את העבודה המקומית ולחזור לנתוני השרת?\nהעותק המקומי נשאר במחשב כגיבוי, אבל השינויים שבו לא יועלו.')) return;
+    try { localStorage.removeItem('ac_localmode'); } catch(e) {}
+    location.reload();
+  };
+
   const duplicateModel = (bid,cid,mid) => {
     const orig=data.brands.find(b=>b.id===bid)?.categories.find(c=>c.id===cid)?.models.find(m=>m.id===mid);
     if(!orig)return;
@@ -583,7 +661,7 @@ function App() {
     const a=document.createElement('a');
     a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));
     a.download=`ac-backup-${new Date().toISOString().slice(0,10)}.json`;
-    a.click();
+    a.click(); markBackupDone();
   };
 
   const impFile = e => {
@@ -608,6 +686,7 @@ function App() {
             <div style={{fontSize:12.5,color:'var(--sub)',maxWidth:260,lineHeight:1.5}}>הטעינה איטית מהרגיל. בדוק את החיבור לאינטרנט.</div>
             <div style={{display:'flex',gap:8,flexWrap:'wrap',justifyContent:'center'}}>
               <button className="btn btn-primary" onClick={()=>location.reload()}>נסה שוב</button>
+              <button className="btn btn-secondary" onClick={()=>{workLoad().then(w=>{if(w){localModeRef.current=true;window.__LOCAL_MODE__=true;setLocalMode(true);setLocalInfo({savedAt:w.savedAt,fileName:'',fileOk:false});try{localStorage.setItem('ac_localmode','1');}catch(e){}setData(w.data);setLoaded(true);}else alert('אין עבודה מקומית שמורה במכשיר.');});}}>פתח עבודה מקומית</button>
               <button className="btn btn-secondary" onClick={()=>{offlineLoad().then(c=>{if(c){OFFLINE_ST.fromCache=true;OFFLINE_ST.savedAt=c.savedAt;setData(c.data);setLoadErr(true);setLoaded(true);}else alert('אין עותק שמור במכשיר. נדרש חיבור לאינטרנט לפתיחה ראשונה.');});}}>פתח עותק שמור</button>
             </div>
           </div>
@@ -698,7 +777,7 @@ function App() {
                   <button className="menu-item" onClick={()=>{setShowDashboard(true);setMenuOpen(false);}}><span className="ic"><Ic n="chart" s={17}/></span>דשבורד</button>
                 {admin&&<button className="menu-item" onClick={()=>{setShowMakatReview(true);setMenuOpen(false);}}><span className="ic"><Ic n="checkc" s={17}/></span>בדיקת מק"טים</button>}
                 {admin&&<button className="menu-item" onClick={()=>{setShowQuality(true);setMenuOpen(false);}}><span className="ic"><Ic n="chart" s={17}/></span>בדיקת איכות נתונים</button>}
-                {admin&&<button className="menu-item" onClick={()=>{setShowTrash(true);setMenuOpen(false);}}><span className="ic"><Ic n="trash" s={17}/></span>סל מחזור</button>}
+                {admin&&<button className="menu-item" onClick={()=>{if(localModeRef.current){alert('סל המחזור זמין רק כשמחוברים לשרת');}else setShowTrash(true);setMenuOpen(false);}}><span className="ic"><Ic n="trash" s={17}/></span>סל מחזור</button>}
                 <div className="menu-divider"/>
                 <div className="menu-label">תוכן</div>
                   <button className="menu-item" onClick={()=>{setShowNewsEditor(true);setMenuOpen(false);}}><span className="ic"><Ic n="news" s={17}/></span>עריכת חדשות</button>
@@ -707,6 +786,7 @@ function App() {
                 <div className="menu-divider"/>
                 <div className="menu-label">גיבוי וייצוא</div>
                   <button className="menu-item" onClick={()=>{expXLS();setMenuOpen(false);}}><span className="ic"><Ic n="sheet" s={17}/></span>ייצוא ל-Excel</button>
+                  <button className="menu-item" onClick={()=>{setShowBackup(true);setMenuOpen(false);}}><span className="ic"><Ic n="save" s={17}/></span>גיבוי ועבודה במחשב</button>
                   <button className="menu-item" onClick={()=>{expJSON();setMenuOpen(false);}}><span className="ic"><Ic n="save" s={17}/></span>ייצוא גיבוי (JSON)</button>
                   <label className="menu-item" style={{cursor:'pointer'}}>
                     <span className="ic"><Ic n="folder" s={17}/></span>ייבוא גיבוי (JSON)
@@ -743,14 +823,15 @@ function App() {
           </div>
         )}
       </header>
-      {(loadErr||saving==='error')&&(
+      {localMode&&<LocalModeBanner info={localInfo} saving={saving} onSaveNow={()=>runSave()} onOpen={()=>setShowBackup(true)}/>}
+      {((loadErr&&!localMode)||saving==='error')&&(
         <div className="save-banner" role="alert">
           <Ic n="warn" s={18}/>
           <div className="sb-txt">
             <b>{loadErr?(OFFLINE_ST.fromCache?'מצב לא מקוון — מוצג עותק שנשמר ב-'+new Date(OFFLINE_ST.savedAt).toLocaleString('he-IL',{dateStyle:'short',timeStyle:'short'}):'הקטלוג לא נטען מהשרת — לא ניתן לשמור שינויים.'):'השינויים האחרונים עדיין לא נשמרו!'}</b>
             <span>{loadErr?(OFFLINE_ST.fromCache?'הנתונים לצפייה בלבד ועלולים לא להיות מעודכנים. עריכה ושמירה חסומות עד לחיבור לאינטרנט.':'רענן את הדף ונסה שוב. אם הבעיה נמשכת בדוק את החיבור לאינטרנט.'):saveErr}</span>
           </div>
-          {loadErr?<button onClick={()=>location.reload()}>רענן</button>:<button onClick={()=>runSave()}>נסה שוב עכשיו</button>}
+          {loadErr&&!localMode?<>{admin&&OFFLINE_ST.fromCache&&<button onClick={()=>startLocalMode(data)}>עבוד מקומית</button>}<button onClick={()=>location.reload()}>רענן</button></>:<button onClick={()=>runSave()}>נסה שוב עכשיו</button>}
         </div>
       )}
 
@@ -794,7 +875,7 @@ function App() {
             {editor&&(
               <div className="sb-tools">
                 <button className={'sb-tool'+(sbEdit?' on':'')} onClick={()=>setSbEdit(v=>!v)} aria-pressed={sbEdit}><Ic n="edit" s={15}/>{sbEdit?'סיום עריכה':'עריכה'}</button>
-                {admin&&<button className="sb-tool" onClick={()=>setShowTrash(true)}><Ic n="trash" s={15}/>סל מחזור</button>}
+                {admin&&<button className="sb-tool" onClick={()=>{ if(localModeRef.current){alert('סל המחזור זמין רק כשמחוברים לשרת');} else setShowTrash(true); }}><Ic n="trash" s={15}/>סל מחזור</button>}
               </div>
             )}
             <div style={{flex:1,overflowY:'auto'}}>
@@ -961,6 +1042,7 @@ function App() {
       {/* PANELS */}
       {showCart     &&<CartPanel cart={cart} data={data} onRemove={removeFromCart} onClear={clearCart} onClose={()=>setShowCart(false)} waDefaults={data.waDefaults||['nameHe','tadPn']}/>}
       {showCompare  &&<ComparePanel compareList={compareList} data={data} onClose={()=>setShowCompare(false)} onRemove={mid=>setCompareList(p=>p.filter(x=>x.mid!==mid))}/>}
+      {showBackup&&admin&&<BackupModal data={data} onClose={()=>setShowBackup(false)} localActive={localMode} localInfo={localInfo} onStartLocal={startLocalMode} onPickFile={pickLocalFile} onSaveNow={()=>runSave()} onUploadToServer={uploadLocalToServer} onDiscardLocal={discardLocalMode}/>}
       {showTrash&&admin&&<TrashModal onClose={()=>setShowTrash(false)} onRestore={restoreFromTrash}/>}
       {showQuality&&admin&&<DataQualityPanel data={data} onClose={()=>setShowQuality(false)} onOpen={(b,c,m)=>nav(b,c,m)}/>}
       {showMakatReview&&admin&&<MakatReviewPanel data={data} onClose={()=>setShowMakatReview(false)} approvals={makatApprovals}
