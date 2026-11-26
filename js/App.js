@@ -1,6 +1,16 @@
 const { useState, useEffect, useMemo, useRef } = React;
 
 // במובייל התפריט נפתח כגיליון תחתון מחוץ לכותרת (portal), כדי שלא ייתפס בתוך הכותרת השקופה
+// האם הנתונים אחרי שמירה זהים בתוכן לנתונים לפניה (נרמול בלבד)? משמש להחלטה אם לשמור את היסטוריית הביטול
+function histAdoptNoop(prev, next){
+  if (!prev || !next) return false;
+  if (!syncEq(syncSlimMeta(prev), syncSlimMeta(next))) return false;
+  const norm = m => { const d = syncModelDoc(m); return {...d, parts:d.parts.map(syncDefaults)}; };
+  const A = new Map(syncAllModels(prev).map(x => [x.m.id, x.m])), all = syncAllModels(next);
+  if (all.length !== A.size) return false;
+  return all.every(({m}) => { const o = A.get(m.id); return !!o && (o === m || syncDocEq(norm(o), norm(m))); });
+}
+
 function MenuHost({mob,children}){ return mob ? ReactDOM.createPortal(children, document.body) : children; }
 
 function App() {
@@ -53,6 +63,8 @@ function App() {
   const [localMode,      setLocalMode]      = useState(false);
   const [localInfo,      setLocalInfo]      = useState(null);
   const [showBackup,     setShowBackup]     = useState(false);
+  const [showFR,         setShowFR]         = useState(false);
+  const [showHub,        setShowHub]        = useState(false);
   const localModeRef = useRef(false);
   const [showTrash,      setShowTrash]      = useState(false);
   const [menuOpen,       setMenuOpen]       = useState(false);
@@ -93,6 +105,8 @@ function App() {
   const retryTimer   = useRef(null);
   const dirtyRef     = useRef(false);   // true while there are changes that are not on the server yet
   const savePromise  = useRef(null);
+  const histPast = useRef([]), histFuture = useRef([]), histPrev = useRef(null), histApplying = useRef(false), histLast = useRef(0);
+  const [histVer, setHistVer] = useState(0);
   const adoptedData  = useRef(null);    // data we just replaced with other editors' changes (not a local edit)
   const runSaveRef   = useRef(null);
 
@@ -211,8 +225,22 @@ function App() {
   useEffect(() => {
     if (!loaded||!data) return;
     latestData.current = data;
-    if (firstLoad.current) { firstLoad.current=false; return; }
-    if (adoptedData.current === data) { adoptedData.current = null; return; }   // just showing other editors' changes
+    if (firstLoad.current) { firstLoad.current=false; histPrev.current=data; return; }
+    if (adoptedData.current === data) {                                        // just showing other editors' changes
+      adoptedData.current = null;
+      // אחרי כל שמירה הנתונים מוחלפים בגרסה "מנורמלת" עם אותו תוכן. רק אם עורך אחר שינה משהו באמת מנקים את היסטוריית הביטול (כדי לא לבטל שינויים של אחרים)
+      let noop = false; try { noop = histAdoptNoop(histPrev.current, data); } catch(e) {}
+      if (!noop) { histPast.current=[]; histFuture.current=[]; setHistVer(v=>v+1); }
+      histPrev.current = data; return;
+    }
+    // היסטוריית ביטול גלובלית: כל שינוי מקומי נשמר כצעד; רצף עריכות מהיר (הקלדה) הוא צעד אחד
+    if (histApplying.current) histApplying.current = false;
+    else if (histPrev.current && histPrev.current !== data) {
+      const nowTs = Date.now();
+      if (nowTs - histLast.current > 900 || !histPast.current.length) { histPast.current.push(histPrev.current); if (histPast.current.length > 60) histPast.current.shift(); }
+      histLast.current = nowTs; histFuture.current = []; setHistVer(v=>v+1);
+    }
+    histPrev.current = data;
     dirtyRef.current = true;
     setSaving('dirty');
     clearTimeout(saveTimer.current);
@@ -349,6 +377,73 @@ function App() {
 
   const mut  = fn => setData(d => fn(d));
   const mutM = (bid,cid,mid,fn) => { changedMids.current.add(mid); mut(d=>({...d,brands:updBrands(d.brands,bid,cid,mid,fn)})); };
+
+  // ── ביטול / ביצוע מחדש גלובלי (Ctrl+Z / Ctrl+Y) ──
+  const histApply = dir => {
+    const from = dir<0 ? histPast : histFuture, to = dir<0 ? histFuture : histPast;
+    if (!from.current.length) return false;
+    const cur = latestData.current || data, target = from.current.pop();
+    to.current.push(cur);
+    // דגמים ששונו בין שני המצבים נשמרים מחדש בשרת
+    const A = new Map(syncAllModels(cur).map(x=>[x.m.id,x.m])), B = new Map(syncAllModels(target).map(x=>[x.m.id,x.m]));
+    const changed = new Set();
+    B.forEach((m,id)=>{ if (A.get(id)!==m) { changed.add(id); changedMids.current.add(id); } });
+    A.forEach((m,id)=>{ if (!B.has(id)) changedMids.current.add(id); });
+    // שדות ברירת המחדל של חלקים (הסתר/הופסק וכו') נכתבים במפורש, אחרת מיזוג השרת רואה "שדה חסר" כ"בלי שינוי" ולא מבטל
+    const restored = syncMapModels(target, m => changed.has(m.id) ? {...m, parts:(m.parts||[]).map(syncDefaults)} : m);
+    histApplying.current = true;
+    setData(restored);
+    setSel(s => (s && !B.has(s.mid)) ? null : s);
+    setHistVer(v=>v+1);
+    if (window.toast) window.toast(dir<0 ? '↶ הפעולה האחרונה בוטלה' : '↷ הפעולה בוצעה מחדש');
+    return true;
+  };
+  const undoAll = () => histApply(-1), redoAll = () => histApply(1);
+  const undoRef = useRef(null); undoRef.current = {undo:undoAll, redo:redoAll};
+  useEffect(()=>{
+    const onKey = e => {
+      if (!(e.ctrlKey||e.metaKey)) return;
+      const t = e.target, tag = t && t.tagName;
+      if (tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT'||(t&&t.isContentEditable)) return;   // בשדות טקסט נשאר הביטול של הדפדפן
+      const k = (e.key||'').toLowerCase();
+      if (k==='z' && !e.shiftKey) { if (undoRef.current.undo()) e.preventDefault(); }
+      else if (k==='y' || (k==='z' && e.shiftKey)) { if (undoRef.current.redo()) e.preventDefault(); }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  },[]);
+
+  // ── מרכז ניהול: פתיחת כלי לפי מפתח ──
+  const openTool = k => {
+    const guardTrash = () => { if (localModeRef.current) alert('סל המחזור זמין רק כשמחוברים לשרת'); else setShowTrash(true); };
+    ({
+      'brands-edit': () => { setSidebar(true); setSbEdit(true); },
+      brandmgr: () => setBrandMgr(true), findreplace: () => setShowFR(true), xls: () => setShowXls(true),
+      bulkmove: () => setShowBulkMove(true), bulkdel: () => setShowBulkDel(true),
+      undo: () => undoAll(), trash: guardTrash, history: () => setShowHistory(true), backup: () => setShowBackup(true),
+      quality: () => setShowQuality(true), makat: () => setShowMakatReview(true),
+      users: () => setShowUsersMgr(true), pwd: () => setChPwd(true),
+      notif: () => setShowNotif(true), news: () => setShowNewsEditor(true), broadcast: () => setShowBroadcast(true),
+      tips: () => setShowTipsEdit(true), dashboard: () => setShowDashboard(true),
+    }[k] || (() => {}))();
+  };
+  // חיפוש והחלפה: מחיל את ההחלפות שנבחרו (גרסה נשמרת בהיסטוריה, ואפשר לבטל)
+  const applyFindReplace = changes => {
+    try { fbSaveSnapshot(data, loginLabel||loginRole, 'לפני חיפוש והחלפה'); } catch(e) {}
+    const byMid = new Map();
+    changes.forEach(c => { if (!byMid.has(c.mid)) byMid.set(c.mid, []); byMid.get(c.mid).push(c); });
+    byMid.forEach((_, id) => changedMids.current.add(id));
+    mut(d => syncMapModels(d, m => {
+      const list = byMid.get(m.id); if (!list) return m;
+      return {...m, parts:(m.parts||[]).map(p => {
+        const mine = list.filter(c => c.pid === p.id); if (!mine.length) return p;
+        const v = {...(p.values||{})}; mine.forEach(c => { v[c.field] = c.after; });
+        return {...p, values:v};
+      })};
+    }));
+    logAlert('edit', 'חיפוש והחלפה: ' + changes.length + ' תאים ב-' + byMid.size + ' דגמים');
+    alert('✅ בוצעו ' + changes.length + ' החלפות ב-' + byMid.size + ' דגמים. אפשר לבטל עם ↶');
+  };
 
   const logAction = (action, extra={}) => fbHist({action,...extra,role:loginRole,actor:loginLabel||loginRole});
 
@@ -742,6 +837,7 @@ function App() {
           {/* end (left): save state + main menu */}
           <div className="hdr-zone hdr-end">
             {editor&&<SaveBadge status={saving} savedAt={savedAt} err={saveErr} onRetry={()=>{runSave();}}/>}
+          {editor&&<><button className="hdr-btn hdr-undo tt tt-hdr" data-tt="ביטול פעולה אחרונה (Ctrl+Z)" aria-label="ביטול פעולה אחרונה" disabled={!histPast.current.length} onClick={undoAll} style={{fontSize:17}}>↶</button><button className="hdr-btn hdr-undo tt tt-hdr" data-tt="ביצוע מחדש (Ctrl+Y)" aria-label="ביצוע מחדש" disabled={!histFuture.current.length} onClick={redoAll} style={{fontSize:17}}>↷</button></>}
           <div className="menu-wrap">
             <button onClick={()=>setMenuOpen(v=>!v)} className={'hdr-btn tt tt-hdr tt-l'+(menuOpen?' on':'')} data-tt="תפריט ראשי: השוואה, סל, מצב כהה ועוד" aria-label="תפריט"><Ic n="dots" s={19}/></button>
             {menuOpen&&<MenuHost mob={isMob}>
@@ -761,6 +857,10 @@ function App() {
                 {editor&&<>
                 <div className="menu-divider"/>
                 <div className="menu-label">עריכה</div>
+                <button className="menu-item" onClick={()=>{setShowHub(true);setMenuOpen(false);}}><span className="ic"><Ic n="settings" s={17}/></span>מרכז ניהול</button>
+                <button className="menu-item" onClick={()=>{setShowFR(true);setMenuOpen(false);}}><span className="ic"><Ic n="search" s={17}/></span>חיפוש והחלפה בקטלוג</button>
+                <button className="menu-item" disabled={!histPast.current.length} onClick={()=>{undoAll();setMenuOpen(false);}}><span className="ic" style={{fontSize:17,lineHeight:1}}>↶</span>ביטול פעולה אחרונה{histPast.current.length?` (${histPast.current.length})`:''}</button>
+                <button className="menu-item" disabled={!histFuture.current.length} onClick={()=>{redoAll();setMenuOpen(false);}}><span className="ic" style={{fontSize:17,lineHeight:1}}>↷</span>ביצוע מחדש{histFuture.current.length?` (${histFuture.current.length})`:''}</button>
                 <button className="menu-item" onClick={()=>{setShowXls(true);setMenuOpen(false);}}><span className="ic"><Ic n="import" s={17}/></span>ייבוא מ-Excel</button>
                 {!admin&&<>
                 <button className="menu-item" onClick={()=>{setShowNewsEditor(true);setMenuOpen(false);}}><span className="ic"><Ic n="news" s={17}/></span>עריכת חדשות</button>
@@ -1042,6 +1142,8 @@ function App() {
       {/* PANELS */}
       {showCart     &&<CartPanel cart={cart} data={data} onRemove={removeFromCart} onClear={clearCart} onClose={()=>setShowCart(false)} waDefaults={data.waDefaults||['nameHe','tadPn']}/>}
       {showCompare  &&<ComparePanel compareList={compareList} data={data} onClose={()=>setShowCompare(false)} onRemove={mid=>setCompareList(p=>p.filter(x=>x.mid!==mid))}/>}
+      {showHub&&editor&&<ManagementHub role={loginRole} data={data} saving={saving} localMode={localMode} counts={{open:unresolvedCount+unresolvedTech}} onOpen={openTool} onClose={()=>setShowHub(false)}/>}
+      {showFR&&editor&&<FindReplaceModal data={data} currentSel={sel} onApply={applyFindReplace} onOpen={(b,c,m)=>nav(b,c,m)} onClose={()=>setShowFR(false)}/>}
       {showBackup&&admin&&<BackupModal data={data} onClose={()=>setShowBackup(false)} localActive={localMode} localInfo={localInfo} onStartLocal={startLocalMode} onPickFile={pickLocalFile} onSaveNow={()=>runSave()} onUploadToServer={uploadLocalToServer} onDiscardLocal={discardLocalMode}/>}
       {showTrash&&admin&&<TrashModal onClose={()=>setShowTrash(false)} onRestore={restoreFromTrash}/>}
       {showQuality&&admin&&<DataQualityPanel data={data} onClose={()=>setShowQuality(false)} onOpen={(b,c,m)=>nav(b,c,m)}/>}

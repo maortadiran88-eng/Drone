@@ -1,18 +1,5 @@
 // ══════════ DATA QUALITY PANEL (Admin — קריאה בלבד, לא משנה נתונים) ══════════
-function DataQualityPanel({data, onClose, onOpen}){
-  const TYPES = {
-    noParts:   {label:'דגמים ללא חלקים',            sev:'red'},
-    noImages:  {label:'דגמים ללא שרטוטים',          sev:'orange'},
-    noTadPn:   {label:'חלקים ללא מק"ט תדיראן',      sev:'orange'},
-    noName:    {label:'חלקים ללא שם (עברית/אנגלית)', sev:'orange'},
-    dupPn:     {label:'מק"ט תדיראן כפול באותו דגם', sev:'red'},
-    spacePn:   {label:'מק"ט עם רווחים מיותרים',     sev:'blue'},
-    dupModel:  {label:'שם דגם שמופיע יותר מפעם',    sev:'blue'},
-  };
-  const [filter, setFilter] = useState('all');
-  const [limit, setLimit]   = useState(120);
-
-  const issues = useMemo(() => {
+function qualityScan(data){
     const out = [];
     const names = {};
     const scan = (b, c, m, sub) => {
@@ -43,7 +30,22 @@ function DataQualityPanel({data, onClose, onOpen}){
     }));
     Object.values(names).forEach(list => { if(list.length>1) list.forEach(x => out.push({...x, type:'dupModel', msg:'מופיע '+list.length+' פעמים'})); });
     return out;
-  }, [data]);
+}
+
+function DataQualityPanel({data, onClose, onOpen}){
+  const TYPES = {
+    noParts:   {label:'דגמים ללא חלקים',            sev:'red'},
+    noImages:  {label:'דגמים ללא שרטוטים',          sev:'orange'},
+    noTadPn:   {label:'חלקים ללא מק"ט תדיראן',      sev:'orange'},
+    noName:    {label:'חלקים ללא שם (עברית/אנגלית)', sev:'orange'},
+    dupPn:     {label:'מק"ט תדיראן כפול באותו דגם', sev:'red'},
+    spacePn:   {label:'מק"ט עם רווחים מיותרים',     sev:'blue'},
+    dupModel:  {label:'שם דגם שמופיע יותר מפעם',    sev:'blue'},
+  };
+  const [filter, setFilter] = useState('all');
+  const [limit, setLimit]   = useState(120);
+
+  const issues = useMemo(() => qualityScan(data), [data]);
 
   const counts = useMemo(() => { const c={}; issues.forEach(i => c[i.type]=(c[i.type]||0)+1); return c; }, [issues]);
   const shown = issues.filter(i => filter==='all' || i.type===filter);

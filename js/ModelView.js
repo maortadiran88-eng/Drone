@@ -16,6 +16,8 @@ function ModelView({brand,cat,model,editor,admin,viewer,hq,data,favorites,onTogg
   const [showMove,    setShowMove]    = useState(false);
   const [showCopy,    setShowCopy]    = useState(false);
   const [showCopySel, setShowCopySel] = useState(false);
+  const [showBulk,    setShowBulk]    = useState(false);
+  const [moveMode,    setMoveMode]    = useState(false);
   const [selRows,     setSelRows]     = useState(new Set());
   const [showWaEditor,setShowWaEditor]= useState(false);
   const [showReport,  setShowReport]  = useState(false);
@@ -84,6 +86,23 @@ function ModelView({brand,cat,model,editor,admin,viewer,hq,data,favorites,onTogg
   };
   const toggleRow  = id => setSelRows(p=>{const n=new Set(p);n.has(id)?n.delete(id):n.add(id);return n;});
   const clearRows  = ()  => setSelRows(new Set());
+  // ── פעולות על חלקים נבחרים (עורכים) ──
+  const bulkSet = (patch, label) => {
+    const n = selRows.size; onUpdate({parts: model.parts.map(p => selRows.has(p.id) ? {...p, ...patch} : p)});
+    setShowBulk(false); clearRows(); alert('✅ ' + label + ' (' + n + ' חלקים). אפשר לבטל עם ↶');
+  };
+  const bulkDelete = () => {
+    const n = selRows.size;
+    if (!confirm('למחוק ' + n + ' חלקים מהדגם "' + model.name + '"?\nאפשר לבטל מיד עם ↶ (תפריט ⋮ ← ביטול פעולה אחרונה, או Ctrl+Z).')) return;
+    onUpdate({parts: model.parts.filter(p => !selRows.has(p.id))});
+    setShowBulk(false); clearRows(); alert('נמחקו ' + n + ' חלקים. אפשר לבטל עם ↶');
+  };
+  const bulkDuplicate = () => {
+    const n = selRows.size, out = [];
+    model.parts.forEach(p => { out.push(p); if (selRows.has(p.id)) out.push({...p, id: gid(), values: {...p.values}}); });
+    onUpdate({parts: out}); setShowBulk(false); clearRows(); alert('✅ שוכפלו ' + n + ' שורות');
+  };
+  const bulkMoveStart = () => { setShowBulk(false); setMoveMode(true); setShowCopySel(true); };
   const moveRow = (id, dir) => {
     const disp = filtered;
     const idx = disp.findIndex(p=>p.id===id);
@@ -219,6 +238,8 @@ function ModelView({brand,cat,model,editor,admin,viewer,hq,data,favorites,onTogg
           <div className="sel-bar" style={{position:'fixed',bottom:16,right:16,left:16,zIndex:100,background:'#25D366',borderRadius:16,padding:'14px 18px',display:'flex',alignItems:'center',gap:10,boxShadow:'0 6px 20px rgba(0,0,0,.3)'}}>
             <span style={{color:'#fff',fontWeight:700,flex:1}}>✓ {selRows.size} נבחרו</span>
             <button onClick={()=>setShowWaEditor(true)} style={{background:'#fff',border:'none',borderRadius:9,padding:'9px 18px',cursor:'pointer',fontWeight:700,color:'#25D366',fontSize:13.5}}>📱 שלח</button>
+            <button onClick={()=>{selRows.forEach(pid=>onAddToCart(brand.id,cat.id,model.id,pid));const n=selRows.size;clearRows();alert(`✅ ${n} פריטים נוספו לסל`);}} style={{background:'rgba(255,255,255,.25)',border:'none',borderRadius:9,padding:'9px 14px',cursor:'pointer',color:'#fff',fontSize:12.5}}>+ סל</button>
+            {editor&&<button onClick={()=>setShowBulk(true)} style={{background:'rgba(255,255,255,.25)',border:'none',borderRadius:9,padding:'9px 14px',cursor:'pointer',color:'#fff',fontSize:12.5}}>⚙ פעולות</button>}
             <button onClick={clearRows} style={{background:'rgba(255,255,255,.25)',border:'none',borderRadius:9,padding:'9px 14px',cursor:'pointer',color:'#fff',fontSize:12.5}}>✕</button>
           </div>
         )}
@@ -433,6 +454,8 @@ function ModelView({brand,cat,model,editor,admin,viewer,hq,data,favorites,onTogg
               style={{background:'rgba(255,255,255,.25)',border:'none',borderRadius:8,padding:'7px 14px',cursor:'pointer',color:'#fff',fontSize:12}}>+ סל</button>
             {editor&&onCopySelectedTo&&<button onClick={()=>setShowCopySel(true)}
               style={{background:'rgba(255,255,255,.25)',border:'none',borderRadius:8,padding:'7px 14px',cursor:'pointer',color:'#fff',fontSize:12}}>העתק לדגם אחר</button>}
+            {editor&&<button onClick={()=>setShowBulk(true)}
+              style={{background:'rgba(255,255,255,.25)',border:'none',borderRadius:8,padding:'7px 14px',cursor:'pointer',color:'#fff',fontSize:12}}>⚙ פעולות</button>}
             <button onClick={clearRows} style={{background:'rgba(255,255,255,.25)',border:'none',borderRadius:8,padding:'7px 12px',cursor:'pointer',color:'#fff',fontSize:12}}>ביטול</button>
           </div>
         )}
@@ -722,7 +745,20 @@ function ModelView({brand,cat,model,editor,admin,viewer,hq,data,favorites,onTogg
 
       {showMove     && <MoveModal      data={data} currentBid={brand.id} currentCid={cat.id} onMove={onMove} onClose={()=>setShowMove(false)}/>}
       {showCopy     && <CopyPartsModal data={data} currentMid={model.id} onCopy={onCopyPartsFrom} onClose={()=>setShowCopy(false)}/>}
-      {showCopySel  && <CopySelectedModal data={data} count={selRows.size} currentMid={model.id} onCopy={(tb,tc,tm,skip)=>{onCopySelectedTo(tb,tc,tm,model.parts.filter(p=>selRows.has(p.id)),model.columns,skip);clearRows();}} onClose={()=>setShowCopySel(false)}/>}
+      {showCopySel  && <CopySelectedModal data={data} count={selRows.size} currentMid={model.id} onCopy={(tb,tc,tm,skip)=>{onCopySelectedTo(tb,tc,tm,model.parts.filter(p=>selRows.has(p.id)),model.columns,skip);if(moveMode)onUpdate({parts:model.parts.filter(p=>!selRows.has(p.id))});setMoveMode(false);clearRows();}} onClose={()=>{setShowCopySel(false);setMoveMode(false);}}/>}
+      {showBulk && editor && <Modal onClose={()=>setShowBulk(false)} title={'פעולות על '+selRows.size+' חלקים נבחרים'}>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(200px,1fr))',gap:10}}>
+          <button className="btn btn-secondary" onClick={()=>bulkSet({hidden:true},'הוסתרו מצופים')}>🙈 הסתר מצופים</button>
+          <button className="btn btn-secondary" onClick={()=>bulkSet({hidden:false},'הוצגו לצופים')}>👁 הצג לצופים</button>
+          <button className="btn btn-secondary" onClick={()=>bulkSet({discontinued:true},'סומנו כ״הופסק״')}>🚫 סמן "הופסק"</button>
+          <button className="btn btn-secondary" onClick={()=>bulkSet({discontinued:false},'סומנו כפעילים')}>✅ סמן כפעיל</button>
+          <button className="btn btn-secondary" onClick={bulkDuplicate}>⧉ שכפל שורות</button>
+          <button className="btn btn-secondary" onClick={()=>{setShowBulk(false);setShowCopySel(true);}}>📋 העתק לדגם אחר</button>
+          <button className="btn btn-secondary" onClick={bulkMoveStart}>➜ העבר לדגם אחר</button>
+          <button className="btn btn-secondary" style={{color:'var(--red)'}} onClick={bulkDelete}>🗑 מחק מהדגם</button>
+        </div>
+        <div className="tc-meta" style={{marginTop:12,lineHeight:1.6}}>כל פעולה אפשר לבטל: תפריט ⋮ ← ביטול פעולה אחרונה (או Ctrl+Z).</div>
+      </Modal>}
       {showWaEditor && <WaEditorModal  brand={brand} cat={cat} model={model} selRows={selRows} defaultCols={waDefaults} onClose={()=>setShowWaEditor(false)}/>}
     </div>
   );

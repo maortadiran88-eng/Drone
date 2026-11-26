@@ -1055,6 +1055,12 @@ html.lite .pc3,html.lite .dg-card,html.lite .pk-card,html.lite .cp-row,html.lite
 @media (max-width:360px){.pc3-nums{grid-template-columns:1fr}}
 @media (prefers-reduced-motion:reduce){.sb-aside,.sb-aside.open,.menu-panel{transition:none;animation:none}}
 
+/* ─── ביטול / ביצוע מחדש ─── */
+.menu-item[disabled]{opacity:.42;pointer-events:none}
+.hdr-undo{display:none}
+.hdr-undo[disabled]{opacity:.35;pointer-events:none}
+@media (min-width:721px){.hdr-undo{display:inline-flex;align-items:center;justify-content:center}}
+
 /* ─── באנר מצב עבודה מקומית ─── */
 .local-banner{border-color:var(--cyan)!important}
 .local-banner button{white-space:nowrap}
@@ -1132,6 +1138,6 @@ html.tech .air-canvas{display:none}
     window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
   }
 </script>
-<script src="dist/app.js?v=20261125111646"></script>
+<script src="dist/app.js?v=20261126044807"></script>
 </body>
 </html>
